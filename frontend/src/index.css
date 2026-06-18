@@ -721,11 +721,30 @@ h1, h2, h3, h4, h5, h6 {
   padding: 2.5rem;
   width: 100%;
   max-width: 460px;
+  max-height: 92vh;
+  overflow-y: auto;
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  /* Smooth scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border-color)) transparent;
 }
+
+.auth-card::-webkit-scrollbar {
+  width: 5px;
+}
+
+.auth-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auth-card::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border-color));
+  border-radius: var(--radius-full);
+}
+
 
 .auth-header {
   text-align: center;

@@ -5,7 +5,8 @@ import {
 import logoMssc from './assets/logo_mssc.png';
 import {
   LayoutDashboard, ClipboardList, Users, BarChart3, LogOut, Sun, Moon,
-  Lock, ArrowRight, ShieldAlert, CheckCircle, Settings, Key, Building
+  Lock, ArrowRight, ShieldAlert, CheckCircle, Settings, Key, Building,
+  Eye, EyeOff
 } from 'lucide-react';
 import NotificationCenter from './components/NotificationCenter';
 import AdminDashboard from './components/AdminDashboard';
@@ -52,6 +53,11 @@ export default function App() {
 
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
+
+  // Password visibility toggles
+  const [showLoginPw, setShowLoginPw]       = useState(false);
+  const [showSignupPw, setShowSignupPw]     = useState(false);
+  const [showAdminPw, setShowAdminPw]       = useState(false);
 
   // Logout modal state
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -778,14 +784,30 @@ export default function App() {
               </div>
               <div className="form-group">
                 <label>Password</label>
-                <input
-                  type="password"
-                  className="form-control"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showLoginPw ? 'text' : 'password'}
+                    className="form-control"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ paddingRight: '2.5rem' }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPw(p => !p)}
+                    style={{
+                      position: 'absolute', right: '0.65rem', top: '50%',
+                      transform: 'translateY(-50%)', background: 'none',
+                      border: 'none', cursor: 'pointer',
+                      color: 'hsl(var(--fg-secondary))', padding: 0
+                    }}
+                    tabIndex={-1}
+                  >
+                    {showLoginPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
               <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '0.75rem' }}>
                 Sign In <ArrowRight size={16} />
@@ -833,14 +855,30 @@ export default function App() {
 
               <div className="form-group">
                 <label>Password</label>
-                <input
-                  type="password"
-                  className="form-control"
-                  placeholder="Min 6 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showSignupPw ? 'text' : 'password'}
+                    className="form-control"
+                    placeholder="Min 6 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ paddingRight: '2.5rem' }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignupPw(p => !p)}
+                    style={{
+                      position: 'absolute', right: '0.65rem', top: '50%',
+                      transform: 'translateY(-50%)', background: 'none',
+                      border: 'none', cursor: 'pointer',
+                      color: 'hsl(var(--fg-secondary))', padding: 0
+                    }}
+                    tabIndex={-1}
+                  >
+                    {showSignupPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -867,14 +905,30 @@ export default function App() {
               {position === 'Admin' && (
                 <div className="form-group">
                   <label style={{ color: '#8b5cf6' }}>Secret Admin Passcode</label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    placeholder="Enter admin code"
-                    value={adminPasscode}
-                    onChange={(e) => setAdminPasscode(e.target.value)}
-                    required
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showAdminPw ? 'text' : 'password'}
+                      className="form-control"
+                      placeholder="Enter admin code"
+                      value={adminPasscode}
+                      onChange={(e) => setAdminPasscode(e.target.value)}
+                      style={{ paddingRight: '2.5rem' }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminPw(p => !p)}
+                      style={{
+                        position: 'absolute', right: '0.65rem', top: '50%',
+                        transform: 'translateY(-50%)', background: 'none',
+                        border: 'none', cursor: 'pointer',
+                        color: 'hsl(var(--fg-secondary))', padding: 0
+                      }}
+                      tabIndex={-1}
+                    >
+                      {showAdminPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                   <span style={{ fontSize: '0.7rem', color: 'hsl(var(--fg-secondary))' }}>
                     Tip: Passcode is `Admin2026`
                   </span>
@@ -939,14 +993,30 @@ export default function App() {
 
               <div className="form-group">
                 <label>Password</label>
-                <input
-                  type="password"
-                  className="form-control"
-                  placeholder="Min 6 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showSignupPw ? 'text' : 'password'}
+                    className="form-control"
+                    placeholder="Min 6 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ paddingRight: '2.5rem' }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignupPw(p => !p)}
+                    style={{
+                      position: 'absolute', right: '0.65rem', top: '50%',
+                      transform: 'translateY(-50%)', background: 'none',
+                      border: 'none', cursor: 'pointer',
+                      color: 'hsl(var(--fg-secondary))', padding: 0
+                    }}
+                    tabIndex={-1}
+                  >
+                    {showSignupPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div className="form-group">
