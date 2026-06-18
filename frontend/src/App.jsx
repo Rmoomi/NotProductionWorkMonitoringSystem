@@ -629,6 +629,165 @@ export default function App() {
   const canViewReports = isAdmin || userProfile?.can_view_reports;
 
   const renderActiveTab = () => {
+    if (activeTab === 'profile') {
+      return (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '1rem',
+          minHeight: '60vh'
+        }}>
+          <div className="card-widget" style={{
+            width: '100%',
+            maxWidth: '500px',
+            padding: '2rem 1.5rem',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.25rem',
+            boxShadow: 'var(--shadow-md)',
+            backgroundColor: 'hsl(var(--bg-secondary))'
+          }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: 'var(--radius-full)',
+              background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2rem',
+              fontWeight: 800,
+              fontFamily: 'Outfit',
+              boxShadow: '0 8px 20px rgba(var(--primary-rgb), 0.3)',
+              border: '3px solid hsl(var(--bg-secondary))'
+            }}>
+              {isClient
+                ? (userProfile?.company_name?.[0] || 'C').toUpperCase()
+                : `${userProfile?.firstname?.[0] || ''}${userProfile?.lastname?.[0] || ''}`.toUpperCase().substring(0, 2)}
+            </div>
+
+            <div>
+              <h2 style={{ fontFamily: 'Outfit', fontSize: '1.35rem', fontWeight: 700, color: 'hsl(var(--fg-primary))', marginBottom: '0.25rem' }}>
+                {isClient
+                  ? userProfile?.contact_person
+                  : `${userProfile?.firstname} ${userProfile?.lastname}`}
+              </h2>
+              <p style={{ color: 'hsl(var(--fg-secondary))', fontSize: '0.85rem' }}>
+                {session?.user?.email}
+              </p>
+            </div>
+
+            <div style={{
+              width: '100%',
+              backgroundColor: 'hsl(var(--bg-tertiary))',
+              borderRadius: 'var(--radius-md)',
+              padding: '1rem 1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+              textAlign: 'left',
+              border: '1px solid hsl(var(--border-color))'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span style={{ color: 'hsl(var(--fg-secondary))', fontWeight: 500 }}>User ID:</span>
+                <span style={{ color: 'hsl(var(--fg-primary))', fontFamily: 'monospace', fontWeight: 600 }}>{session?.user?.id.substring(0, 12)}...</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span style={{ color: 'hsl(var(--fg-secondary))', fontWeight: 500 }}>Account Type:</span>
+                <span style={{ color: 'hsl(var(--fg-primary))', fontWeight: 600, textTransform: 'capitalize' }}>
+                  {userProfile?.userType === 'client' ? 'Client Partner' : (userProfile?.position === 'Admin' ? 'Administrator' : 'Technician Staff')}
+                </span>
+              </div>
+              {isClient ? (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'hsl(var(--fg-secondary))', fontWeight: 500 }}>Company Name:</span>
+                    <span style={{ color: 'hsl(var(--fg-primary))', fontWeight: 600 }}>{userProfile?.company_name}</span>
+                  </div>
+                  {userProfile?.contact_number && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                      <span style={{ color: 'hsl(var(--fg-secondary))', fontWeight: 500 }}>Contact Number:</span>
+                      <span style={{ color: 'hsl(var(--fg-primary))', fontWeight: 600 }}>{userProfile?.contact_number}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'hsl(var(--fg-secondary))', fontWeight: 500 }}>Department:</span>
+                    <span style={{ color: 'hsl(var(--fg-primary))', fontWeight: 600 }}>{userProfile?.position}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'hsl(var(--fg-secondary))', fontWeight: 500 }}>Office Branch:</span>
+                    <span style={{ color: 'hsl(var(--fg-primary))', fontWeight: 600 }}>{userProfile?.branch}</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+              marginTop: '0.5rem'
+            }}>
+              {/* Theme toggle for mobile */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '0.75rem 1rem',
+                backgroundColor: 'hsl(var(--bg-secondary))',
+                border: '1px solid hsl(var(--border-color))',
+                borderRadius: 'var(--radius-md)'
+              }}>
+                <span style={{ fontSize: '0.9rem', color: 'hsl(var(--fg-primary))', fontWeight: 500 }}>Appearance Mode</span>
+                <button
+                  type="button"
+                  className="theme-btn"
+                  onClick={toggleTheme}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.85rem',
+                    border: '1px solid hsl(var(--border-color))',
+                    cursor: 'pointer',
+                    backgroundColor: 'hsl(var(--bg-tertiary))',
+                    color: 'hsl(var(--fg-primary))'
+                  }}
+                >
+                  {theme === 'light' ? <><Moon size={15} /> Dark</> : <><Sun size={15} /> Light</>}
+                </button>
+              </div>
+
+              {/* Signout Button */}
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={triggerLogoutConfirm}
+                style={{
+                  justifyContent: 'center',
+                  padding: '0.75rem',
+                  fontWeight: 600,
+                  fontSize: '0.95rem'
+                }}
+              >
+                <LogOut size={16} /> Sign Out of Account
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (isClient) {
       return (
         <ClientDashboard
@@ -1303,15 +1462,17 @@ export default function App() {
         <header className="top-header">
           <div>
             <h1 style={{ fontSize: '1.5rem', fontFamily: 'Outfit' }}>
-              {isClient ? (activeTab === 'tickets' ? 'Support Tickets' : 'Client Support Portal') :
-                activeTab === 'dashboard' ? 'Dashboard Overview' :
-                  activeTab === 'tickets' ? 'Ticket Management' :
-                    activeTab === 'technical' ? 'Technical Staff' :
-                      activeTab === 'clients' ? 'Clients Directory' : 'Analytics & Reports'}
+              {activeTab === 'profile' ? 'User Profile' :
+                isClient ? (activeTab === 'tickets' ? 'Support Tickets' : 'Client Support Portal') :
+                  activeTab === 'dashboard' ? 'Dashboard Overview' :
+                    activeTab === 'tickets' ? 'Ticket Management' :
+                      activeTab === 'technical' ? 'Technical Staff' :
+                        activeTab === 'clients' ? 'Clients Directory' : 'Analytics & Reports'}
             </h1>
             <p style={{ fontSize: '0.8rem', color: 'hsl(var(--fg-secondary))' }}>
-              {isClient ? (activeTab === 'tickets' ? 'View and track your submitted support requests.' : 'Submit support requests and trace technician resolutions.') :
-                'Manage concerns, track resolution speeds, and view staff statistics.'}
+              {activeTab === 'profile' ? 'Manage your account settings and preference details.' :
+                isClient ? (activeTab === 'tickets' ? 'View and track your submitted support requests.' : 'Submit support requests and trace technician resolutions.') :
+                  'Manage concerns, track resolution speeds, and view staff statistics.'}
             </p>
           </div>
 
@@ -1324,7 +1485,7 @@ export default function App() {
               onRefresh={handleRefresh}
             />
 
-            <div className="user-profile-badge">
+            <div className="user-profile-badge" onClick={() => setActiveTab('profile')} style={{ cursor: 'pointer' }}>
               <div className="avatar">
                 {isClient
                   ? (userProfile?.company_name?.[0] || 'C').toUpperCase()
@@ -1351,6 +1512,141 @@ export default function App() {
         {renderActiveTab()}
 
       </main>
+
+      {/* Mobile Bottom Navigation Bar */}
+      {session && userProfile && (userProfile.userType !== 'staff' || userProfile.is_active) && (
+        <div className="mobile-bottom-nav">
+          {isClient ? (
+            <>
+              <div
+                onClick={() => setActiveTab('dashboard')}
+                className={`mobile-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+              >
+                <LayoutDashboard size={20} />
+                <span>Dashboard</span>
+              </div>
+              <div
+                onClick={() => setActiveTab('tickets')}
+                className={`mobile-nav-item ${activeTab === 'tickets' ? 'active' : ''}`}
+              >
+                <ClipboardList size={20} />
+                <span>Tickets</span>
+              </div>
+            </>
+          ) : isAdmin ? (
+            <>
+              <div
+                onClick={() => setActiveTab('dashboard')}
+                className={`mobile-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+              >
+                <LayoutDashboard size={20} />
+                <span>Dashboard</span>
+              </div>
+              {canViewTickets && (
+                <div
+                  onClick={handleAdminTicketTabClick}
+                  className={`mobile-nav-item ${activeTab === 'tickets' ? 'active' : ''}`}
+                >
+                  <ClipboardList size={20} />
+                  <span>Tickets</span>
+                  {pendingAdminTickets > 0 && (
+                    <span className="mobile-nav-badge">{pendingAdminTickets}</span>
+                  )}
+                </div>
+              )}
+              {canViewTechnical && (
+                <div
+                  onClick={() => setActiveTab('technical')}
+                  className={`mobile-nav-item ${activeTab === 'technical' ? 'active' : ''}`}
+                >
+                  <Users size={20} />
+                  <span>Technical</span>
+                </div>
+              )}
+              <div
+                onClick={() => setActiveTab('clients')}
+                className={`mobile-nav-item ${activeTab === 'clients' ? 'active' : ''}`}
+              >
+                <Building size={20} />
+                <span>Clients</span>
+              </div>
+              {canViewReports && (
+                <div
+                  onClick={() => setActiveTab('reports')}
+                  className={`mobile-nav-item ${activeTab === 'reports' ? 'active' : ''}`}
+                >
+                  <BarChart3 size={20} />
+                  <span>Reports</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div
+                onClick={handleClearTechBadge}
+                className={`mobile-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+              >
+                <LayoutDashboard size={20} />
+                <span>Dashboard</span>
+                {unviewedTechTickets > 0 && (
+                  <span className="mobile-nav-badge">{unviewedTechTickets}</span>
+                )}
+              </div>
+              {userProfile?.can_view_tickets && (
+                <div
+                  onClick={() => setActiveTab('tickets')}
+                  className={`mobile-nav-item ${activeTab === 'tickets' ? 'active' : ''}`}
+                >
+                  <ClipboardList size={20} />
+                  <span>Tickets</span>
+                </div>
+              )}
+              {userProfile?.can_view_technical && (
+                <div
+                  onClick={() => setActiveTab('technical')}
+                  className={`mobile-nav-item ${activeTab === 'technical' ? 'active' : ''}`}
+                >
+                  <Users size={20} />
+                  <span>Technical</span>
+                </div>
+              )}
+              {userProfile?.can_view_reports && (
+                <div
+                  onClick={() => setActiveTab('reports')}
+                  className={`mobile-nav-item ${activeTab === 'reports' ? 'active' : ''}`}
+                >
+                  <BarChart3 size={20} />
+                  <span>Reports</span>
+                </div>
+              )}
+            </>
+          )}
+          {/* User Icon for Profile */}
+          <div
+            onClick={() => setActiveTab('profile')}
+            className={`mobile-nav-item ${activeTab === 'profile' ? 'active' : ''}`}
+          >
+            <div style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              backgroundColor: activeTab === 'profile' ? 'rgba(var(--primary-rgb), 0.2)' : 'rgba(var(--primary-rgb), 0.08)',
+              color: activeTab === 'profile' ? 'hsl(var(--primary))' : 'hsl(var(--fg-secondary))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              border: `1.5px solid ${activeTab === 'profile' ? 'hsl(var(--primary))' : 'hsl(var(--border-color))'}`
+            }}>
+              {isClient
+                ? (userProfile?.company_name?.[0] || 'C').toUpperCase()
+                : `${userProfile?.firstname?.[0] || ''}${userProfile?.lastname?.[0] || ''}`.toUpperCase().substring(0, 2)}
+            </div>
+            <span>Profile</span>
+          </div>
+        </div>
+      )}
 
     </div>
   );
