@@ -135,12 +135,21 @@ export default function App() {
     try {
       const activeSession = currentSession || session;
       const userMetadata = activeSession?.user?.user_metadata || {};
-      const userRole = userMetadata.role || userMetadata.position;
+      const userEmail = activeSession?.user?.email;
 
       let profileData = null;
 
-      if (userRole === 'Client') {
-        // 1. Try to find in clients table by user_id
+      // 1. Try to find in technical_staff table by user_id
+      const { data: staffData } = await supabase
+        .from('technical_staff')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (staffData) {
+        profileData = { ...staffData, userType: 'staff' };
+      } else {
+        // 2. Try to find in clients table by user_id
         const { data: clientData } = await supabase
           .from('clients')
           .select('*')
@@ -149,58 +158,62 @@ export default function App() {
 
         if (clientData) {
           profileData = { ...clientData, userType: 'client' };
-        } else {
-          // 2. Fallback: search clients by email matching user's auth email
-          const userEmail = activeSession?.user?.email;
-          if (userEmail) {
-            const { data: clientDataByEmail } = await supabase
+        } else if (userEmail) {
+          // 3. Fallback: Search by email in clients first (clients are pre-seeded or registered)
+          const { data: clientDataByEmail } = await supabase
+            .from('clients')
+            .select('*')
+            .eq('email', userEmail)
+            .maybeSingle();
+
+          if (clientDataByEmail) {
+            // Link user_id in database
+            await supabase
               .from('clients')
+              .update({ user_id: userId })
+              .eq('client_id', clientDataByEmail.client_id);
+
+            profileData = { ...clientDataByEmail, user_id: userId, userType: 'client' };
+          } else {
+            // 4. Fallback: Search by email in technical_staff
+            const { data: staffDataByEmail } = await supabase
+              .from('technical_staff')
               .select('*')
               .eq('email', userEmail)
               .maybeSingle();
 
-            if (clientDataByEmail) {
-              // Sync user_id in clients table
+            if (staffDataByEmail) {
+              // Link user_id in database
               await supabase
-                .from('clients')
+                .from('technical_staff')
                 .update({ user_id: userId })
-                .eq('client_id', clientDataByEmail.client_id);
+                .eq('technical_id', staffDataByEmail.technical_id);
 
-              profileData = { ...clientDataByEmail, user_id: userId, userType: 'client' };
+              profileData = { ...staffDataByEmail, user_id: userId, userType: 'staff' };
             }
           }
         }
+      }
 
-        // 3. Temporary state to bypass database latency (no approval required for client)
-        if (!profileData) {
+      // 5. If still not found, check role in metadata or default to fallback based on metadata role
+      if (!profileData) {
+        const userRole = userMetadata.role || userMetadata.position;
+        if (userRole === 'Client') {
           profileData = {
             client_id: userId, // fallback client ID
             company_name: userMetadata.company_name || 'Client Company',
             contact_person: `${userMetadata.firstname || ''} ${userMetadata.lastname || ''}`.trim() || 'Client User',
-            email: activeSession?.user?.email,
+            email: userEmail,
             contact_number: userMetadata.contact_number || '',
             userType: 'client'
           };
-        }
-
-      } else {
-        // Technical Staff / Admin flow
-        const { data: staffData } = await supabase
-          .from('technical_staff')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (staffData) {
-          profileData = { ...staffData, userType: 'staff' };
         } else {
-          // Temporary staff state
           profileData = {
             firstname: userMetadata.firstname || 'Technical',
             lastname: userMetadata.lastname || 'Staff',
             position: userMetadata.position || 'Technical',
             branch: userMetadata.branch || 'DAVAO',
-            is_active: userMetadata.position === 'Admin', // admins active instantly
+            is_active: userMetadata.position === 'Admin',
             userType: 'staff'
           };
         }
