@@ -158,64 +158,139 @@ export default function App() {
 
         if (clientData) {
           profileData = { ...clientData, userType: 'client' };
-        } else if (userEmail) {
-          // 3. Fallback: Search by email in clients first (clients are pre-seeded or registered)
-          const { data: clientDataByEmail } = await supabase
-            .from('clients')
-            .select('*')
-            .eq('email', userEmail)
-            .maybeSingle();
+        } else {
+          // Determine the user's role/type
+          const userRole = userMetadata.role || userMetadata.position;
+          const isUserClient = userRole === 'Client';
 
-          if (clientDataByEmail) {
-            // Link user_id in database
-            await supabase
-              .from('clients')
-              .update({ user_id: userId })
-              .eq('client_id', clientDataByEmail.client_id);
+          if (isUserClient) {
+            // 3. Fallback for Client: Search by email in clients
+            let clientRow = null;
+            if (userEmail) {
+              const { data: clientByEmail } = await supabase
+                .from('clients')
+                .select('*')
+                .eq('email', userEmail)
+                .maybeSingle();
+              clientRow = clientByEmail;
+            }
 
-            profileData = { ...clientDataByEmail, user_id: userId, userType: 'client' };
-          } else {
-            // 4. Fallback: Search by email in technical_staff
-            const { data: staffDataByEmail } = await supabase
-              .from('technical_staff')
-              .select('*')
-              .eq('email', userEmail)
-              .maybeSingle();
+            // 4. Fallback for Client: Search by company_name if email fallback failed
+            if (!clientRow && userMetadata.company_name) {
+              const { data: clientByCompany } = await supabase
+                .from('clients')
+                .select('*')
+                .eq('company_name', userMetadata.company_name.trim())
+                .maybeSingle();
+              clientRow = clientByCompany;
+            }
 
-            if (staffDataByEmail) {
+            if (clientRow) {
               // Link user_id in database
-              await supabase
+              const { data: updatedClient } = await supabase
+                .from('clients')
+                .update({ user_id: userId, email: userEmail })
+                .eq('client_id', clientRow.client_id)
+                .select()
+                .maybeSingle();
+
+              if (updatedClient) {
+                profileData = { ...updatedClient, userType: 'client' };
+              } else {
+                profileData = { ...clientRow, user_id: userId, email: userEmail, userType: 'client' };
+              }
+            } else {
+              // 5. Self-healing: Insert missing client row
+              const newClientData = {
+                user_id: userId,
+                company_name: userMetadata.company_name?.trim() || `Company ${userId.substring(0, 8)}`,
+                contact_person: `${userMetadata.firstname || ''} ${userMetadata.lastname || ''}`.trim() || 'Client User',
+                contact_number: userMetadata.contact_number || '',
+                email: userEmail
+              };
+
+              const { data: newClient, error: insertErr } = await supabase
+                .from('clients')
+                .insert([newClientData])
+                .select()
+                .maybeSingle();
+
+              if (newClient) {
+                profileData = { ...newClient, userType: 'client' };
+              } else {
+                console.error('Failed to self-heal insert client row:', insertErr);
+                profileData = {
+                  client_id: userId, // last resort fallback client ID
+                  company_name: newClientData.company_name,
+                  contact_person: newClientData.contact_person,
+                  email: userEmail,
+                  contact_number: newClientData.contact_number,
+                  userType: 'client'
+                };
+              }
+            }
+          } else {
+            // 6. Fallback for Technical Staff: Search by email in technical_staff
+            let staffRow = null;
+            if (userEmail) {
+              const { data: staffByEmail } = await supabase
+                .from('technical_staff')
+                .select('*')
+                .eq('email', userEmail)
+                .maybeSingle();
+              staffRow = staffByEmail;
+            }
+
+            if (staffRow) {
+              // Link user_id in database
+              const { data: updatedStaff } = await supabase
                 .from('technical_staff')
                 .update({ user_id: userId })
-                .eq('technical_id', staffDataByEmail.technical_id);
+                .eq('technical_id', staffRow.technical_id)
+                .select()
+                .maybeSingle();
 
-              profileData = { ...staffDataByEmail, user_id: userId, userType: 'staff' };
+              if (updatedStaff) {
+                profileData = { ...updatedStaff, userType: 'staff' };
+              } else {
+                profileData = { ...staffRow, user_id: userId, userType: 'staff' };
+              }
+            } else {
+              // 7. Self-healing: Insert missing technical_staff row
+              const newStaffData = {
+                user_id: userId,
+                firstname: userMetadata.firstname || 'Technical',
+                lastname: userMetadata.lastname || 'Staff',
+                email: userEmail,
+                branch: userMetadata.branch || 'DAVAO',
+                position: userMetadata.position || 'Technical',
+                is_active: userMetadata.position === 'Admin',
+                can_view_tickets: true,
+                can_view_technical: true,
+                can_view_reports: true
+              };
+
+              const { data: newStaff, error: insertErr } = await supabase
+                .from('technical_staff')
+                .insert([newStaffData])
+                .select()
+                .maybeSingle();
+
+              if (newStaff) {
+                profileData = { ...newStaff, userType: 'staff' };
+              } else {
+                console.error('Failed to self-heal insert staff row:', insertErr);
+                profileData = {
+                  firstname: newStaffData.firstname,
+                  lastname: newStaffData.lastname,
+                  position: newStaffData.position,
+                  branch: newStaffData.branch,
+                  is_active: newStaffData.is_active,
+                  userType: 'staff'
+                };
+              }
             }
           }
-        }
-      }
-
-      // 5. If still not found, check role in metadata or default to fallback based on metadata role
-      if (!profileData) {
-        const userRole = userMetadata.role || userMetadata.position;
-        if (userRole === 'Client') {
-          profileData = {
-            client_id: userId, // fallback client ID
-            company_name: userMetadata.company_name || 'Client Company',
-            contact_person: `${userMetadata.firstname || ''} ${userMetadata.lastname || ''}`.trim() || 'Client User',
-            email: userEmail,
-            contact_number: userMetadata.contact_number || '',
-            userType: 'client'
-          };
-        } else {
-          profileData = {
-            firstname: userMetadata.firstname || 'Technical',
-            lastname: userMetadata.lastname || 'Staff',
-            position: userMetadata.position || 'Technical',
-            branch: userMetadata.branch || 'DAVAO',
-            is_active: userMetadata.position === 'Admin',
-            userType: 'staff'
-          };
         }
       }
 
@@ -432,17 +507,30 @@ export default function App() {
           setAuthSuccess('Client registration complete! Redirecting to dashboard...');
           isExplicitLoginRef.current = true;
 
-          // Insert client entry manually as backup constraint safety
+          // Insert client entry manually as backup constraint safety (prevent duplicate console errors)
           try {
-            await supabase
+            const { data: existingClient } = await supabase
               .from('clients')
-              .insert([{
-                user_id: user.id,
-                company_name: companyName.trim(),
-                contact_person: `${firstname.trim()} ${lastname.trim()}`,
-                contact_number: contactNumber.trim(),
-                email: email
-              }]);
+              .select('client_id, user_id')
+              .eq('company_name', companyName.trim())
+              .maybeSingle();
+
+            if (!existingClient) {
+              await supabase
+                .from('clients')
+                .insert([{
+                  user_id: user.id,
+                  company_name: companyName.trim(),
+                  contact_person: `${firstname.trim()} ${lastname.trim()}`,
+                  contact_number: contactNumber.trim(),
+                  email: email
+                }]);
+            } else if (!existingClient.user_id) {
+              await supabase
+                .from('clients')
+                .update({ user_id: user.id })
+                .eq('client_id', existingClient.client_id);
+            }
           } catch (dbErr) {
             console.warn('Backup database insert handled by database trigger:', dbErr);
           }
