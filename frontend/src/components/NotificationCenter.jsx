@@ -20,6 +20,41 @@ function saveClientSeenIds(companyId, ids) {
   } catch { /* ignore */ }
 }
 
+/**
+ * Smart timestamp:
+ *  - Same day          → "2:30 PM"
+ *  - Yesterday         → "Yesterday · 2:30 PM"
+ *  - Within 7 days     → "Mon · 2:30 PM"
+ *  - Older             → "Jun 17 · 2:30 PM"  (or "Jun 17, 2024" across years)
+ */
+function formatNotifTime(rawDate) {
+  if (!rawDate) return '';
+  const date  = new Date(rawDate);
+  const now   = new Date();
+  const time  = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const startOfToday     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday - 86400000);
+  const startOf7DaysAgo  = new Date(startOfToday - 6 * 86400000);
+
+  if (date >= startOfToday) {
+    return time;                                          // "2:30 PM"
+  } else if (date >= startOfYesterday) {
+    return `Yesterday · ${time}`;                        // "Yesterday · 2:30 PM"
+  } else if (date >= startOf7DaysAgo) {
+    const day = date.toLocaleDateString([], { weekday: 'short' });
+    return `${day} · ${time}`;                           // "Mon · 2:30 PM"
+  } else {
+    const sameYear = date.getFullYear() === now.getFullYear();
+    const dateStr  = date.toLocaleDateString([], {
+      month: 'short', day: 'numeric',
+      ...(sameYear ? {} : { year: 'numeric' })
+    });
+    return `${dateStr} · ${time}`;                      // "Jun 17 · 2:30 PM"
+  }
+}
+
+
 export default function NotificationCenter({ userProfile, tickets, onRefresh }) {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -265,10 +300,7 @@ export default function NotificationCenter({ userProfile, tickets, onRefresh }) 
                     {/* Row 4: time + dismiss */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
                       <span style={{ fontSize: '0.75rem', color: 'hsl(var(--fg-muted))' }}>
-                        {new Date(notif.updated_at || notif.date_requested).toLocaleString([], {
-                          month: 'short', day: 'numeric',
-                          hour: '2-digit', minute: '2-digit'
-                        })}
+                        {formatNotifTime(notif.updated_at || notif.date_requested)}
                       </span>
                       <button
                         onClick={(e) => isClient ? handleDismissClient(notif.ticket_id, e) : handleDismissDB(notif.ticket_id, e)}
