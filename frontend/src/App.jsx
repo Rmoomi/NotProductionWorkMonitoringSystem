@@ -1248,13 +1248,11 @@ export default function App() {
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
 
             {/* Realtime Alert Notifications Bell */}
-            {(isAdmin || (userProfile && userProfile.userType === 'staff')) && (
-              <NotificationCenter
-                userProfile={userProfile}
-                tickets={tickets}
-                onRefresh={handleRefresh}
-              />
-            )}
+            <NotificationCenter
+              userProfile={userProfile}
+              tickets={tickets}
+              onRefresh={handleRefresh}
+            />
 
             <div className="user-profile-badge">
               <div className="avatar">
