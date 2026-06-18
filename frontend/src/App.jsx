@@ -6,7 +6,7 @@ import logoMssc from './assets/logo_mssc.png';
 import {
   LayoutDashboard, ClipboardList, Users, BarChart3, LogOut, Sun, Moon,
   Lock, ArrowRight, ShieldAlert, CheckCircle, Settings, Key, Building,
-  Eye, EyeOff
+  Eye, EyeOff, X
 } from 'lucide-react';
 import NotificationCenter from './components/NotificationCenter';
 import AdminDashboard from './components/AdminDashboard';
@@ -58,6 +58,9 @@ export default function App() {
   const [showLoginPw, setShowLoginPw]       = useState(false);
   const [showSignupPw, setShowSignupPw]     = useState(false);
   const [showAdminPw, setShowAdminPw]       = useState(false);
+
+  // Auth Modal popup for guests
+  const [showAuthModal, setShowAuthModal]   = useState(false);
 
   // Logout modal state
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -132,6 +135,21 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch products & concerns publicly at startup for non-logged-in guest submit form
+  useEffect(() => {
+    const fetchPublicData = async () => {
+      try {
+        const { data: prodData } = await supabase.from('products').select('*').order('product_name', { ascending: true });
+        if (prodData && prodData.length > 0) setProducts(prodData);
+        const { data: concernData } = await supabase.from('concerns').select('*').order('concern_name', { ascending: true });
+        if (concernData && concernData.length > 0) setConcerns(concernData);
+      } catch (err) {
+        console.warn('Failed to load public data:', err);
+      }
+    };
+    fetchPublicData();
   }, []);
 
   // -----------------------------------------------------------------
@@ -875,339 +893,482 @@ export default function App() {
 
   // -----------------------------------------------------------------
   // Screen Render Flows
-  // -----------------------------------------------------------------
-
-  // 1. Not Logged In Screen
+  // -----------------------------------------------------------------  // 1. Not Logged In Screen
   if (!session) {
     return (
-      <div className="auth-page">
-        <div className="auth-card">
+      <div className="auth-page" style={{ padding: '2rem 1rem' }}>
+        <div className="auth-card" style={{ maxWidth: '600px' }}>
           <div className="auth-header">
             <img className="auth-logo" src={logoMssc} alt="MSSC Logo" />
+            <h1 style={{ fontFamily: 'Outfit', fontSize: '1.45rem', marginTop: '0.25rem', color: 'hsl(var(--fg-primary))' }}>
+              Create Support Request
+            </h1>
             <p style={{ color: 'hsl(var(--fg-secondary))', fontSize: '0.85rem', textAlign: 'center' }}>
-              {isTechnicalUrl ? 'Work Monitoring & Support Ticket Management (Staff)' : 'Client Support Portal'}
+              Fill out the details below to submit a technical concern to our support team.
             </p>
           </div>
 
-          <div style={{ display: 'flex', border: '1px solid hsl(var(--border-color))', borderRadius: 'var(--radius-md)', padding: '0.2rem', backgroundColor: 'hsl(var(--bg-tertiary))' }}>
-            <button
-              onClick={() => { setAuthMode('login'); setAuthError(''); setAuthSuccess(''); }}
-              style={{
-                flex: 1, padding: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem',
-                backgroundColor: authMode === 'login' ? 'hsl(var(--bg-secondary))' : 'transparent',
-                color: authMode === 'login' ? 'hsl(var(--fg-primary))' : 'hsl(var(--fg-secondary))',
-                fontWeight: authMode === 'login' ? 600 : 400,
-                borderRadius: 'calc(var(--radius-md) - 2px)'
-              }}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => { setAuthMode('signup'); setAuthError(''); setAuthSuccess(''); }}
-              style={{
-                flex: 1, padding: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem',
-                backgroundColor: authMode === 'signup' ? 'hsl(var(--bg-secondary))' : 'transparent',
-                color: authMode === 'signup' ? 'hsl(var(--fg-primary))' : 'hsl(var(--fg-secondary))',
-                fontWeight: authMode === 'signup' ? 600 : 400,
-                borderRadius: 'calc(var(--radius-md) - 2px)'
-              }}
-            >
-              {isTechnicalUrl ? 'Register Staff' : 'Register Client'}
-            </button>
-          </div>
-
-          {authError && (
-            <div style={{ color: '#ff7675', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid #ff7675', backgroundColor: 'rgba(255, 118, 117, 0.05)', fontSize: '0.85rem' }}>
-              {authError}
+          <form style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <div className="form-group" onClick={() => setShowAuthModal(true)} style={{ cursor: 'pointer' }}>
+              <label>Company Name <span style={{ color: 'red' }}>*</span></label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Acme Corporation"
+                style={{ pointerEvents: 'none' }}
+                readOnly
+              />
             </div>
-          )}
 
-          {authSuccess && (
-            <div style={{ color: '#00b894', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid #00b894', backgroundColor: 'rgba(0, 184, 148, 0.05)', fontSize: '0.85rem' }}>
-              {authSuccess}
-            </div>
-          )}
-
-          {authMode === 'login' ? (
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              <div className="form-group">
-                <label>Email Address</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+              <div className="form-group" onClick={() => setShowAuthModal(true)} style={{ cursor: 'pointer' }}>
+                <label>Contact Person <span style={{ color: 'red' }}>*</span></label>
                 <input
-                  type="email"
+                  type="text"
                   className="form-control"
-                  placeholder="name@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  placeholder="John Doe"
+                  style={{ pointerEvents: 'none' }}
+                  readOnly
                 />
               </div>
-              <div className="form-group">
-                <label>Password</label>
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <input
-                    type={showLoginPw ? 'text' : 'password'}
-                    className="form-control"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    style={{ paddingRight: '2.4rem' }}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowLoginPw(p => !p)}
-                    style={{
-                      position: 'absolute', right: '0.7rem', top: '50%',
-                      transform: 'translateY(-50%)', background: 'none',
-                      border: 'none', cursor: 'pointer', lineHeight: 0,
-                      color: 'hsl(var(--fg-secondary))', padding: 0
-                    }}
-                    tabIndex={-1}
-                  >
-                    {showLoginPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                </div>
-              </div>
-              <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '0.6rem', marginTop: '0.25rem' }}>
-                Sign In <ArrowRight size={15} />
-              </button>
-            </form>
-          ) : isTechnicalUrl ? (
-            /* Technical Staff Signup */
-            <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <div className="form-group">
-                  <label>First Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="John"
-                    value={firstname}
-                    onChange={(e) => setFirstname(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Last Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Doe"
-                    value={lastname}
-                    onChange={(e) => setLastname(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Email Address</label>
+              <div className="form-group" onClick={() => setShowAuthModal(true)} style={{ cursor: 'pointer' }}>
+                <label>Contact Email <span style={{ color: 'red' }}>*</span></label>
                 <input
                   type="email"
                   className="form-control"
                   placeholder="john.doe@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  style={{ pointerEvents: 'none' }}
+                  readOnly
                 />
               </div>
+            </div>
 
-              <div className="form-group">
-                <label>Password</label>
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <input
-                    type={showSignupPw ? 'text' : 'password'}
-                    className="form-control"
-                    placeholder="Min 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    style={{ paddingRight: '2.4rem' }}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowSignupPw(p => !p)}
-                    style={{
-                      position: 'absolute', right: '0.7rem', top: '50%',
-                      transform: 'translateY(-50%)', background: 'none',
-                      border: 'none', cursor: 'pointer', lineHeight: 0,
-                      color: 'hsl(var(--fg-secondary))', padding: 0
-                    }}
-                    tabIndex={-1}
-                  >
-                    {showSignupPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                </div>
+            <div className="form-group" onClick={() => setShowAuthModal(true)} style={{ cursor: 'pointer' }}>
+              <label>Contact Number (Optional)</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="+639171234567"
+                style={{ pointerEvents: 'none' }}
+                readOnly
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+              <div className="form-group" onClick={() => setShowAuthModal(true)} style={{ cursor: 'pointer' }}>
+                <label>Affected Product <span style={{ color: 'red' }}>*</span></label>
+                <select
+                  className="form-control"
+                  style={{ pointerEvents: 'none' }}
+                  readOnly
+                >
+                  <option value="">Select a product...</option>
+                  {products.map(p => (
+                    <option key={p.product_id} value={p.product_id}>{p.product_name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group" onClick={() => setShowAuthModal(true)} style={{ cursor: 'pointer' }}>
+                <label>Concern Category <span style={{ color: 'red' }}>*</span></label>
+                <select
+                  className="form-control"
+                  style={{ pointerEvents: 'none' }}
+                  readOnly
+                >
+                  <option value="">Select a concern...</option>
+                  {concerns.map(c => (
+                    <option key={c.concern_id} value={c.concern_id}>{c.concern_name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group" onClick={() => setShowAuthModal(true)} style={{ cursor: 'pointer' }}>
+              <label>Concern Description <span style={{ color: 'red' }}>*</span></label>
+              <textarea
+                className="form-control"
+                placeholder="Describe your issue or concern in detail..."
+                style={{ minHeight: '80px', resize: 'none', pointerEvents: 'none' }}
+                readOnly
+              />
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ justifyContent: 'center', padding: '0.7rem', marginTop: '0.5rem' }}
+              onClick={() => setShowAuthModal(true)}
+            >
+              Submit Support Request
+            </button>
+          </form>
+
+          {/* Direct Sign In Quick Link */}
+          <div style={{ textAlign: 'center', marginTop: '1rem', borderTop: '1px solid hsl(var(--border-color))', paddingTop: '1rem', fontSize: '0.82rem' }}>
+            <span style={{ color: 'hsl(var(--fg-secondary))' }}>Already have an account? </span>
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); setShowAuthModal(true); }}
+              style={{ color: 'hsl(var(--primary))', textDecoration: 'none', fontWeight: 600 }}
+            >
+              Sign In here
+            </a>
+          </div>
+        </div>
+
+        {/* Modal Auth Popup */}
+        {showAuthModal && (
+          <div className="modal-overlay" style={{ zIndex: 2000 }} onClick={() => setShowAuthModal(false)}>
+            <div className="auth-card" onClick={(e) => e.stopPropagation()} style={{ position: 'relative', width: '100%', maxWidth: '460px', margin: '1rem' }}>
+              
+              {/* Close Button */}
+              <button 
+                type="button" 
+                onClick={() => setShowAuthModal(false)}
+                style={{
+                  position: 'absolute',
+                  right: '1.25rem',
+                  top: '1.25rem',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'hsl(var(--fg-secondary))',
+                  lineHeight: 0,
+                  padding: '0.25rem',
+                  zIndex: 10
+                }}
+              >
+                <X size={20} />
+              </button>
+
+              <div className="auth-header">
+                <img className="auth-logo" src={logoMssc} alt="MSSC Logo" />
+                <p style={{ color: 'hsl(var(--fg-secondary))', fontSize: '0.85rem', textAlign: 'center' }}>
+                  {isTechnicalUrl ? 'Work Monitoring & Support Ticket Management (Staff)' : 'Client Support Portal'}
+                </p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <div className="form-group">
-                  <label>Office Branch</label>
-                  <select className="form-control" value={branch} onChange={(e) => setBranch(e.target.value)}>
-                    <option value="DAVAO">DAVAO</option>
-                    <option value="MANILA">MANILA</option>
-                    <option value="CEBU">CEBU</option>
-                    <option value="GENERAL SANTOS">GENERAL SANTOS</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Position</label>
-                  <select className="form-control" value={position} onChange={(e) => setPosition(e.target.value)}>
-                    <option value="Technical">Technical</option>
-                    <option value="Support">Support</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Admin">Admin</option>
-                  </select>
-                </div>
+              <div style={{ display: 'flex', border: '1px solid hsl(var(--border-color))', borderRadius: 'var(--radius-md)', padding: '0.2rem', backgroundColor: 'hsl(var(--bg-tertiary))' }}>
+                <button
+                  onClick={() => { setAuthMode('login'); setAuthError(''); setAuthSuccess(''); }}
+                  style={{
+                    flex: 1, padding: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem',
+                    backgroundColor: authMode === 'login' ? 'hsl(var(--bg-secondary))' : 'transparent',
+                    color: authMode === 'login' ? 'hsl(var(--fg-primary))' : 'hsl(var(--fg-secondary))',
+                    fontWeight: authMode === 'login' ? 600 : 400,
+                    borderRadius: 'calc(var(--radius-md) - 2px)'
+                  }}
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => { setAuthMode('signup'); setAuthError(''); setAuthSuccess(''); }}
+                  style={{
+                    flex: 1, padding: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem',
+                    backgroundColor: authMode === 'signup' ? 'hsl(var(--bg-secondary))' : 'transparent',
+                    color: authMode === 'signup' ? 'hsl(var(--fg-primary))' : 'hsl(var(--fg-secondary))',
+                    fontWeight: authMode === 'signup' ? 600 : 400,
+                    borderRadius: 'calc(var(--radius-md) - 2px)'
+                  }}
+                >
+                  {isTechnicalUrl ? 'Register Staff' : 'Register Client'}
+                </button>
               </div>
 
-              {position === 'Admin' && (
-                <div className="form-group">
-                  <label style={{ color: '#8b5cf6' }}>Secret Admin Passcode</label>
-                  <div style={{ position: 'relative', width: '100%' }}>
-                    <input
-                      type={showAdminPw ? 'text' : 'password'}
-                      className="form-control"
-                      placeholder="Enter admin code"
-                      value={adminPasscode}
-                      onChange={(e) => setAdminPasscode(e.target.value)}
-                      style={{ paddingRight: '2.4rem' }}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowAdminPw(p => !p)}
-                      style={{
-                        position: 'absolute', right: '0.7rem', top: '50%',
-                        transform: 'translateY(-50%)', background: 'none',
-                        border: 'none', cursor: 'pointer', lineHeight: 0,
-                        color: 'hsl(var(--fg-secondary))', padding: 0
-                      }}
-                      tabIndex={-1}
-                    >
-                      {showAdminPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                  <span style={{ fontSize: '0.7rem', color: 'hsl(var(--fg-secondary))' }}>
-                    Tip: Passcode is `Admin2026`
-                  </span>
+              {authError && (
+                <div style={{ color: '#ff7675', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid #ff7675', backgroundColor: 'rgba(255, 118, 117, 0.05)', fontSize: '0.85rem', marginTop: '0.75rem' }}>
+                  {authError}
                 </div>
               )}
 
-              <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '0.6rem', marginTop: '0.1rem' }}>
-                Register Profile <ArrowRight size={15} />
-              </button>
-            </form>
-          ) : (
-            /* Client Signup */
-            <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              <div className="form-group">
-                <label>Company Name</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Acme Corporation"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <div className="form-group">
-                  <label>Contact First Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="John"
-                    value={firstname}
-                    onChange={(e) => setFirstname(e.target.value)}
-                    required
-                  />
+              {authSuccess && (
+                <div style={{ color: '#00b894', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid #00b894', backgroundColor: 'rgba(0, 184, 148, 0.05)', fontSize: '0.85rem', marginTop: '0.75rem' }}>
+                  {authSuccess}
                 </div>
-                <div className="form-group">
-                  <label>Contact Last Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Doe"
-                    value={lastname}
-                    onChange={(e) => setLastname(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+              )}
 
-              <div className="form-group">
-                <label>Email Address</label>
-                <input
-                  type="email"
-                  className="form-control"
-                  placeholder="contact@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Password</label>
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <input
-                    type={showSignupPw ? 'text' : 'password'}
-                    className="form-control"
-                    placeholder="Min 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    style={{ paddingRight: '2.4rem' }}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowSignupPw(p => !p)}
-                    style={{
-                      position: 'absolute', right: '0.7rem', top: '50%',
-                      transform: 'translateY(-50%)', background: 'none',
-                      border: 'none', cursor: 'pointer', lineHeight: 0,
-                      color: 'hsl(var(--fg-secondary))', padding: 0
-                    }}
-                    tabIndex={-1}
-                  >
-                    {showSignupPw ? <EyeOff size={15} /> : <Eye size={15} />}
+              {authMode === 'login' ? (
+                <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.75rem' }}>
+                  <div className="form-group">
+                    <label>Email Address</label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      placeholder="name@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Password</label>
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <input
+                        type={showLoginPw ? 'text' : 'password'}
+                        className="form-control"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        style={{ paddingRight: '2.4rem' }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPw(p => !p)}
+                        style={{
+                          position: 'absolute', right: '0.7rem', top: '50%',
+                          transform: 'translateY(-50%)', background: 'none',
+                          border: 'none', cursor: 'pointer', lineHeight: 0,
+                          color: 'hsl(var(--fg-secondary))', padding: 0
+                        }}
+                        tabIndex={-1}
+                      >
+                        {showLoginPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+                  <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '0.6rem', marginTop: '0.25rem' }}>
+                    Sign In <ArrowRight size={15} />
                   </button>
-                </div>
+                </form>
+              ) : isTechnicalUrl ? (
+                /* Technical Staff Signup */
+                <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.75rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                    <div className="form-group">
+                      <label>First Name</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="John"
+                        value={firstname}
+                        onChange={(e) => setFirstname(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Last Name</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Doe"
+                        value={lastname}
+                        onChange={(e) => setLastname(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Email Address</label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      placeholder="john.doe@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Password</label>
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <input
+                        type={showSignupPw ? 'text' : 'password'}
+                        className="form-control"
+                        placeholder="Min 6 characters"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        style={{ paddingRight: '2.4rem' }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPw(p => !p)}
+                        style={{
+                          position: 'absolute', right: '0.7rem', top: '50%',
+                          transform: 'translateY(-50%)', background: 'none',
+                          border: 'none', cursor: 'pointer', lineHeight: 0,
+                          color: 'hsl(var(--fg-secondary))', padding: 0
+                        }}
+                        tabIndex={-1}
+                      >
+                        {showSignupPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                    <div className="form-group">
+                      <label>Office Branch</label>
+                      <select className="form-control" value={branch} onChange={(e) => setBranch(e.target.value)}>
+                        <option value="DAVAO">DAVAO</option>
+                        <option value="MANILA">MANILA</option>
+                        <option value="CEBU">CEBU</option>
+                        <option value="GENERAL SANTOS">GENERAL SANTOS</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Position</label>
+                      <select className="form-control" value={position} onChange={(e) => setPosition(e.target.value)}>
+                        <option value="Technical">Technical</option>
+                        <option value="Support">Support</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Admin">Admin</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {position === 'Admin' && (
+                    <div className="form-group">
+                      <label style={{ color: '#8b5cf6' }}>Secret Admin Passcode</label>
+                      <div style={{ position: 'relative', width: '100%' }}>
+                        <input
+                          type={showAdminPw ? 'text' : 'password'}
+                          className="form-control"
+                          placeholder="Enter admin code"
+                          value={adminPasscode}
+                          onChange={(e) => setAdminPasscode(e.target.value)}
+                          style={{ paddingRight: '2.4rem' }}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowAdminPw(p => !p)}
+                          style={{
+                            position: 'absolute', right: '0.7rem', top: '50%',
+                            transform: 'translateY(-50%)', background: 'none',
+                            border: 'none', cursor: 'pointer', lineHeight: 0,
+                            color: 'hsl(var(--fg-secondary))', padding: 0
+                          }}
+                          tabIndex={-1}
+                        >
+                          {showAdminPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      </div>
+                      <span style={{ fontSize: '0.7rem', color: 'hsl(var(--fg-secondary))' }}>
+                        Tip: Passcode is `Admin2026`
+                      </span>
+                    </div>
+                  )}
+
+                  <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '0.6rem', marginTop: '0.1rem' }}>
+                    Register Profile <ArrowRight size={15} />
+                  </button>
+                </form>
+              ) : (
+                /* Client Signup */
+                <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.75rem' }}>
+                  <div className="form-group">
+                    <label>Company Name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Acme Corporation"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                    <div className="form-group">
+                      <label>Contact First Name</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="John"
+                        value={firstname}
+                        onChange={(e) => setFirstname(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Contact Last Name</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Doe"
+                        value={lastname}
+                        onChange={(e) => setLastname(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Email Address</label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      placeholder="contact@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Password</label>
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <input
+                        type={showSignupPw ? 'text' : 'password'}
+                        className="form-control"
+                        placeholder="Min 6 characters"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        style={{ paddingRight: '2.4rem' }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPw(p => !p)}
+                        style={{
+                          position: 'absolute', right: '0.7rem', top: '50%',
+                          transform: 'translateY(-50%)', background: 'none',
+                          border: 'none', cursor: 'pointer', lineHeight: 0,
+                          color: 'hsl(var(--fg-secondary))', padding: 0
+                        }}
+                        tabIndex={-1}
+                      >
+                        {showSignupPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Contact Number (Viber/Phone)</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="+639171234567"
+                      value={contactNumber}
+                      onChange={(e) => setContactNumber(e.target.value)}
+                    />
+                  </div>
+
+                  <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '0.6rem', marginTop: '0.1rem' }}>
+                    Register Client <ArrowRight size={15} />
+                  </button>
+                </form>
+              )}
+
+              {/* Separate URL Switcher Link */}
+              <div style={{ textAlign: 'center', marginTop: '1.25rem', borderTop: '1px solid hsl(var(--border-color))', paddingTop: '1rem', fontSize: '0.82rem' }}>
+                {isTechnicalUrl ? (
+                  <a href="#" style={{ color: 'hsl(var(--primary))', textDecoration: 'none', fontWeight: 600 }}>
+                    Are you a client? Go to Client Support Portal
+                  </a>
+                ) : (
+                  <a href="#/technical" style={{ color: 'hsl(var(--primary))', textDecoration: 'none', fontWeight: 600 }}>
+                    Are you a technician or admin? Go to Staff Portal
+                  </a>
+                )}
               </div>
-
-              <div className="form-group">
-                <label>Contact Number (Viber/Phone)</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="+639171234567"
-                  value={contactNumber}
-                  onChange={(e) => setContactNumber(e.target.value)}
-                />
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '0.6rem', marginTop: '0.1rem' }}>
-                Register Client <ArrowRight size={15} />
-              </button>
-            </form>
-          )}
-
-          {/* Separate URL Switcher Link */}
-          <div style={{ textAlign: 'center', marginTop: '1.25rem', borderTop: '1px solid hsl(var(--border-color))', paddingTop: '1rem', fontSize: '0.82rem' }}>
-            {isTechnicalUrl ? (
-              <a href="#" style={{ color: 'hsl(var(--primary))', textDecoration: 'none', fontWeight: 600 }}>
-                Are you a client? Go to Client Support Portal
-              </a>
-            ) : (
-              <a href="#/technical" style={{ color: 'hsl(var(--primary))', textDecoration: 'none', fontWeight: 600 }}>
-                Are you a technician or admin? Go to Staff Portal
-              </a>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
