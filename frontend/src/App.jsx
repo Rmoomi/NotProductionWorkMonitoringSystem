@@ -400,6 +400,19 @@ export default function App() {
     return () => clearInterval(interval);
   }, [session, userProfile, handleRefresh]);
 
+  // Guard: if a technician's active tab permission is revoked, redirect to dashboard
+  useEffect(() => {
+    if (!userProfile || userProfile.userType === 'client' || userProfile.position === 'Admin') return;
+    const tabPermissions = {
+      tickets: userProfile.can_view_tickets,
+      technical: userProfile.can_view_technical,
+      reports: userProfile.can_view_reports,
+    };
+    if (activeTab in tabPermissions && !tabPermissions[activeTab]) {
+      setActiveTab('dashboard');
+    }
+  }, [userProfile, activeTab]);
+
   // -----------------------------------------------------------------
   // Auth Operations (Login / Signup)
   // -----------------------------------------------------------------
@@ -656,13 +669,41 @@ export default function App() {
           return <AdminDashboard tickets={tickets} staff={staff} onTabChange={setActiveTab} />;
       }
     } else {
-      // Technician profile lands on personal dashboard
-      return (
-        <TechnicianDashboard
-          userProfile={userProfile} tickets={tickets} clients={clients} products={products} concerns={concerns}
-          onRefresh={handleRefresh}
-        />
-      );
+      // Non-admin staff — respect their can_view_* permission flags
+      switch (activeTab) {
+        case 'dashboard':
+          return (
+            <TechnicianDashboard
+              userProfile={userProfile} tickets={tickets} clients={clients} products={products} concerns={concerns}
+              onRefresh={handleRefresh}
+            />
+          );
+        case 'tickets':
+          return userProfile?.can_view_tickets ? (
+            <TicketManager
+              tickets={tickets} staff={staff} products={products} concerns={concerns} clients={clients}
+              onRefresh={handleRefresh} adminUser={userProfile}
+            />
+          ) : <ForbiddenScreen />;
+        case 'technical':
+          return userProfile?.can_view_technical ? (
+            <TechnicalManager
+              staff={staff} tickets={tickets} products={products} concerns={concerns} clients={clients}
+              onRefresh={handleRefresh} adminUser={userProfile}
+            />
+          ) : <ForbiddenScreen />;
+        case 'reports':
+          return userProfile?.can_view_reports ? (
+            <AnalyticsReports tickets={tickets} staff={staff} />
+          ) : <ForbiddenScreen />;
+        default:
+          return (
+            <TechnicianDashboard
+              userProfile={userProfile} tickets={tickets} clients={clients} products={products} concerns={concerns}
+              onRefresh={handleRefresh}
+            />
+          );
+      }
     }
   };
 
@@ -1118,18 +1159,53 @@ export default function App() {
               )}
             </>
           ) : (
-            /* Technician views */
-            <a 
-              onClick={handleClearTechBadge}
-              className="sidebar-item active"
-              style={{ cursor: 'pointer' }}
-            >
-              <LayoutDashboard size={18} />
-              <span>My Dashboard</span>
-              {unviewedTechTickets > 0 && (
-                <span className="sidebar-badge">{unviewedTechTickets}</span>
+            /* Non-admin staff views — tabs shown based on can_view_* flags */
+            <>
+              <a
+                onClick={handleClearTechBadge}
+                className={`sidebar-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+                style={{ cursor: 'pointer' }}
+              >
+                <LayoutDashboard size={18} />
+                <span>My Dashboard</span>
+                {unviewedTechTickets > 0 && (
+                  <span className="sidebar-badge">{unviewedTechTickets}</span>
+                )}
+              </a>
+
+              {userProfile?.can_view_tickets && (
+                <a
+                  onClick={() => setActiveTab('tickets')}
+                  className={`sidebar-item ${activeTab === 'tickets' ? 'active' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <ClipboardList size={18} />
+                  <span>Ticket Board</span>
+                </a>
               )}
-            </a>
+
+              {userProfile?.can_view_technical && (
+                <a
+                  onClick={() => setActiveTab('technical')}
+                  className={`sidebar-item ${activeTab === 'technical' ? 'active' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Users size={18} />
+                  <span>Technical Panel</span>
+                </a>
+              )}
+
+              {userProfile?.can_view_reports && (
+                <a
+                  onClick={() => setActiveTab('reports')}
+                  className={`sidebar-item ${activeTab === 'reports' ? 'active' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <BarChart3 size={18} />
+                  <span>Analytics Reports</span>
+                </a>
+              )}
+            </>
           )}
         </nav>
 
