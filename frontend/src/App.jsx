@@ -562,6 +562,42 @@ export default function App() {
     setShowLogoutConfirm(true);
   };
 
+  const handleClearTechBadge = async () => {
+    if (!session || !userProfile || userProfile.userType !== 'staff' || userProfile.position === 'Admin') return;
+    const techUnviewed = tickets.filter(t => t.technical_id === userProfile.technical_id && !t.is_viewed);
+    if (techUnviewed.length > 0) {
+      try {
+        await supabase
+          .from('tickets')
+          .update({ is_viewed: true })
+          .eq('technical_id', userProfile.technical_id)
+          .eq('is_viewed', false);
+        handleRefresh();
+      } catch (err) {
+        console.error('Failed to clear technician badge:', err);
+      }
+    }
+  };
+
+  const handleAdminTicketTabClick = async () => {
+    setActiveTab('tickets');
+    if (userProfile && userProfile.position === 'Admin') {
+      const pendingUnviewed = tickets.filter(t => t.status === 'Pending' && !t.is_viewed);
+      if (pendingUnviewed.length > 0) {
+        try {
+          await supabase
+            .from('tickets')
+            .update({ is_viewed: true })
+            .eq('status', 'Pending')
+            .eq('is_viewed', false);
+          handleRefresh();
+        } catch (err) {
+          console.error('Failed to clear admin pending badge:', err);
+        }
+      }
+    }
+  };
+
   // -----------------------------------------------------------------
   // Navigation Guards
   // -----------------------------------------------------------------
@@ -937,7 +973,7 @@ export default function App() {
     : 0;
 
   const pendingAdminTickets = userProfile && userProfile.position === 'Admin'
-    ? tickets.filter(t => t.status === 'Pending').length
+    ? tickets.filter(t => t.status === 'Pending' && !t.is_viewed).length
     : 0;
 
   // 3. Main Dashboard Layout (For active users)
@@ -1042,7 +1078,7 @@ export default function App() {
 
               {canViewTickets && (
                 <a
-                  onClick={() => setActiveTab('tickets')}
+                  onClick={handleAdminTicketTabClick}
                   className={`sidebar-item ${activeTab === 'tickets' ? 'active' : ''}`}
                 >
                   <ClipboardList size={18} />
@@ -1083,7 +1119,11 @@ export default function App() {
             </>
           ) : (
             /* Technician views */
-            <a className="sidebar-item active">
+            <a 
+              onClick={handleClearTechBadge}
+              className="sidebar-item active"
+              style={{ cursor: 'pointer' }}
+            >
               <LayoutDashboard size={18} />
               <span>My Dashboard</span>
               {unviewedTechTickets > 0 && (
@@ -1130,8 +1170,8 @@ export default function App() {
 
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
 
-            {/* Realtime Alert Notifications Bell for Admin */}
-            {isAdmin && (
+            {/* Realtime Alert Notifications Bell */}
+            {(isAdmin || (userProfile && userProfile.userType === 'staff')) && (
               <NotificationCenter
                 userProfile={userProfile}
                 tickets={tickets}

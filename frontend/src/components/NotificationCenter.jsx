@@ -7,10 +7,20 @@ export default function NotificationCenter({ userProfile, tickets, onRefresh }) 
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    // Filter tickets that are Resolved and not viewed
-    const resolvedUnread = tickets.filter(t => t.status === 'Resolved' && !t.is_viewed);
-    setNotifications(resolvedUnread);
-  }, [tickets]);
+    if (!userProfile) return;
+    const isAdmin = userProfile.position === 'Admin';
+    if (isAdmin) {
+      // Admin gets notified of Resolved tickets that are unread
+      const resolvedUnread = tickets.filter(t => t.status === 'Resolved' && !t.is_viewed);
+      setNotifications(resolvedUnread);
+    } else {
+      // Technician gets notified of tickets assigned to them that are unread
+      const techUnread = tickets.filter(
+        t => t.technical_id === userProfile.technical_id && !t.is_viewed
+      );
+      setNotifications(techUnread);
+    }
+  }, [tickets, userProfile]);
 
   // Realtime subscription for tickets
   useEffect(() => {
@@ -110,7 +120,7 @@ export default function NotificationCenter({ userProfile, tickets, onRefresh }) 
               {notifications.length === 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '150px', color: 'hsl(var(--fg-secondary))', gap: '0.5rem' }}>
                   <Info size={24} />
-                  <p>No new resolved tickets.</p>
+                  <p>{userProfile?.position === 'Admin' ? 'No new resolved tickets.' : 'No new assigned tickets.'}</p>
                 </div>
               ) : (
                 notifications.map((notif) => (
