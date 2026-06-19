@@ -7,11 +7,24 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Drop existing triggers and functions if they exist to allow clean runs
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_auth_user();
-DROP TRIGGER IF EXISTS tr_tickets_sync_stats ON public.tickets;
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'tickets') THEN
+        DROP TRIGGER IF EXISTS tr_tickets_sync_stats ON public.tickets;
+        DROP TRIGGER IF EXISTS tr_tickets_updated_at ON public.tickets;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'technical_staff') THEN
+        DROP TRIGGER IF EXISTS tr_technical_staff_updated_at ON public.technical_staff;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'clients') THEN
+        DROP TRIGGER IF EXISTS tr_clients_updated_at ON public.clients;
+    END IF;
+END$$;
+
 DROP FUNCTION IF EXISTS public.sync_technician_stats();
-DROP TRIGGER IF EXISTS tr_tickets_updated_at ON public.tickets;
-DROP TRIGGER IF EXISTS tr_technical_staff_updated_at ON public.technical_staff;
-DROP TRIGGER IF EXISTS tr_clients_updated_at ON public.clients;
 DROP FUNCTION IF EXISTS public.update_updated_at_column();
 
 -- Drop existing tables (order matters to resolve constraints)
