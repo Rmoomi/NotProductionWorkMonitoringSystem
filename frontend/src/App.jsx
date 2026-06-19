@@ -39,13 +39,13 @@ export default function App() {
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
 
   // Auth Form Fields
-  const [username, setUsername]   = useState('');
-  const [email, setEmail]         = useState('');
-  const [password, setPassword]   = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [firstname, setFirstname] = useState('');
-  const [lastname, setLastname]   = useState('');
-  const [position, setPosition]   = useState('Technical');
-  const [branch, setBranch]       = useState('DAVAO');
+  const [lastname, setLastname] = useState('');
+  const [position, setPosition] = useState('Technical');
+  const [branch, setBranch] = useState('DAVAO');
   const [adminPasscode, setAdminPasscode] = useState('');
 
   // Client Sign Up Form Fields
@@ -56,12 +56,12 @@ export default function App() {
   const [authSuccess, setAuthSuccess] = useState('');
 
   // Password visibility toggles
-  const [showLoginPw, setShowLoginPw]       = useState(false);
-  const [showSignupPw, setShowSignupPw]     = useState(false);
-  const [showAdminPw, setShowAdminPw]       = useState(false);
+  const [showLoginPw, setShowLoginPw] = useState(false);
+  const [showSignupPw, setShowSignupPw] = useState(false);
+  const [showAdminPw, setShowAdminPw] = useState(false);
 
   // Auth Modal popup for guests
-  const [showAuthModal, setShowAuthModal]   = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Logout modal state
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -122,7 +122,7 @@ export default function App() {
       const type = userProfile.userType;
       const role = userProfile.position;
       const activeTabLabel = activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
-      
+
       if (type === 'client') {
         if (activeTab === 'dashboard') {
           title = 'Client Dashboard | Ticket Monitoring';
@@ -495,7 +495,7 @@ export default function App() {
   const checkUsernameUnique = async (usrName) => {
     const clean = usrName.trim().toLowerCase();
     if (!clean) return false;
-    
+
     const { data: clientData } = await supabase
       .from('clients')
       .select('username')
@@ -667,7 +667,7 @@ export default function App() {
             } else {
               await supabase
                 .from('clients')
-                .update({ 
+                .update({
                   user_id: user.id,
                   email: dbEmail,
                   username: username.trim().toLowerCase()
@@ -1129,10 +1129,10 @@ export default function App() {
         {showAuthModal && (
           <div className="modal-overlay" style={{ zIndex: 2000 }} onClick={() => setShowAuthModal(false)}>
             <div className="auth-card" onClick={(e) => e.stopPropagation()} style={{ position: 'relative', width: '100%', maxWidth: '460px', margin: '1rem', maxHeight: '90vh', overflowY: 'auto' }}>
-              
+
               {/* Close Button */}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowAuthModal(false)}
                 style={{
                   position: 'absolute',
@@ -1577,9 +1577,6 @@ export default function App() {
           <div className="client-navbar-container">
             <div className="client-navbar-brand" onClick={() => setActiveTab('dashboard')} style={{ cursor: 'pointer' }}>
               <img src={logoMssc} alt="MSSC Logo" className="client-navbar-logo" />
-              <span style={{ fontFamily: 'Outfit', fontWeight: 800, fontSize: '1.25rem', color: 'hsl(var(--fg-primary))' }}>
-                Ticket Monitoring
-              </span>
             </div>
 
             <nav className="client-navbar-nav">
