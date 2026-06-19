@@ -1,4 +1,4 @@
--- TICKETFLOW SUPABASE POSTGRESQL SCHEMA SETUP
+-- TICKET MONITORING SUPABASE POSTGRESQL SCHEMA SETUP
 -- Copy and run this script in your Supabase SQL Editor.
 
 -- Enable UUID extension if not enabled

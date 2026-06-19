@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  Building, User, Mail, Phone, Ticket, Clock, CheckCircle, 
-  Search, ShieldAlert, ChevronRight, HelpCircle, Calendar 
+import {
+  Building, User, Mail, Phone, Ticket, Clock, CheckCircle,
+  Search, ShieldAlert, ChevronRight, HelpCircle, Calendar
 } from 'lucide-react';
 
 export default function ClientManager({ clients, tickets, staff, onRefresh }) {
@@ -14,15 +14,15 @@ export default function ClientManager({ clients, tickets, staff, onRefresh }) {
   };
 
   // Filter clients by search term
-  const filteredClients = clients.filter(c => 
+  const filteredClients = clients.filter(c =>
     c.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.contact_person.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Tickets for the selected client
-  const clientTickets = selectedClient 
-    ? tickets.filter(t => t.company_id === selectedClient.client_id) 
+  const clientTickets = selectedClient
+    ? tickets.filter(t => t.company_id === selectedClient.client_id)
     : [];
 
   // Summary Metrics calculations for all clients
@@ -33,7 +33,7 @@ export default function ClientManager({ clients, tickets, staff, onRefresh }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      
+
       {/* Summary Metrics Cards */}
       <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         <div className="metric-card">
@@ -78,8 +78,8 @@ export default function ClientManager({ clients, tickets, staff, onRefresh }) {
       </div>
 
       {/* Main Two-Panel Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '2rem', height: 'calc(100vh - 160px)' }}>
-        
+      <div style={{ display: 'grid', gridTemplateColumns: '320px minmax(0, 1fr)', gap: '2rem', height: 'calc(100vh - 160px)' }}>
+
         {/* Left Panel: Client List */}
         <div className="card-widget" style={{ padding: '1rem', height: '100%', overflowY: 'auto' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
@@ -104,13 +104,13 @@ export default function ClientManager({ clients, tickets, staff, onRefresh }) {
               filteredClients.map(client => {
                 const initials = (client.company_name?.[0] || 'C').toUpperCase();
                 const isSelected = selectedClient && selectedClient.client_id === client.client_id;
-                
+
                 // Count tickets for this specific client
                 const thisClientTickets = tickets.filter(t => t.company_id === client.client_id);
                 const thisClientResolved = thisClientTickets.filter(t => t.status === 'Resolved' || t.status === 'Closed').length;
 
                 return (
-                  <div 
+                  <div
                     key={client.client_id}
                     onClick={() => handleSelectClient(client)}
                     style={{
@@ -121,14 +121,14 @@ export default function ClientManager({ clients, tickets, staff, onRefresh }) {
                       transition: 'all var(--transition-fast)'
                     }}
                   >
-                    <div className="avatar" style={{ 
-                      border: 'none', 
-                      backgroundColor: isSelected ? 'hsl(var(--primary))' : 'rgba(var(--primary-rgb), 0.15)', 
-                      color: isSelected ? '#fff' : 'hsl(var(--primary))' 
+                    <div className="avatar" style={{
+                      border: 'none',
+                      backgroundColor: isSelected ? 'hsl(var(--primary))' : 'rgba(var(--primary-rgb), 0.15)',
+                      color: isSelected ? '#fff' : 'hsl(var(--primary))'
                     }}>
                       {initials}
                     </div>
-                    
+
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'hsl(var(--fg-primary))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {client.company_name}
@@ -154,13 +154,13 @@ export default function ClientManager({ clients, tickets, staff, onRefresh }) {
         {/* Right Panel: Client Details & Tickets Log */}
         {selectedClient ? (
           <div className="card-widget" style={{ height: '100%', overflowY: 'auto', gap: '1.5rem' }}>
-            
+
             {/* Header profile details */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid hsl(var(--border-color))', paddingBottom: '1rem' }}>
               <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                <div className="avatar" style={{ 
-                  width: '60px', height: '60px', fontSize: '1.5rem', 
-                  backgroundColor: 'rgba(var(--primary-rgb), 0.15)', border: 'none' 
+                <div className="avatar" style={{
+                  width: '60px', height: '60px', fontSize: '1.5rem',
+                  backgroundColor: 'rgba(var(--primary-rgb), 0.15)', border: 'none'
                 }}>
                   {(selectedClient.company_name?.[0] || 'C').toUpperCase()}
                 </div>
@@ -179,7 +179,7 @@ export default function ClientManager({ clients, tickets, staff, onRefresh }) {
 
             {/* Performance/Status breakdown */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
-              
+
               {/* Profile Contact summary */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1.25rem', border: '1px solid hsl(var(--border-color))', borderRadius: 'var(--radius-lg)' }}>
                 <h4 style={{ fontFamily: 'Outfit', marginBottom: '0.25rem' }}>Client Profile Details</h4>

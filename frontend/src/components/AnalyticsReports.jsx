@@ -198,7 +198,7 @@ export default function AnalyticsReports({ tickets, staff }) {
         pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-      pdf.save(`TicketFlow_Analytics_Report_${datePreset}.pdf`);
+      pdf.save(`TicketMonitoring_Analytics_Report_${datePreset}.pdf`);
     } catch (err) {
       console.error('Failed to generate PDF:', err);
     }
@@ -233,7 +233,7 @@ export default function AnalyticsReports({ tickets, staff }) {
     const wsResolved = XLSX.utils.json_to_sheet(resolvedRows);
     XLSX.utils.book_append_sheet(wb, wsResolved, 'Resolved Tickets Log');
 
-    XLSX.writeFile(wb, `TicketFlow_Analytics_Export_${datePreset}.xlsx`);
+    XLSX.writeFile(wb, `TicketMonitoring_Analytics_Export_${datePreset}.xlsx`);
   };
 
   return (
@@ -301,7 +301,7 @@ export default function AnalyticsReports({ tickets, staff }) {
         
         {/* Title for PDF Exporting */}
         <div style={{ borderBottom: '2px solid hsl(var(--primary))', paddingBottom: '0.5rem' }}>
-          <h2 style={{ fontFamily: 'Outfit', color: 'hsl(var(--fg-primary))' }}>TicketFlow Interactive Report</h2>
+          <h2 style={{ fontFamily: 'Outfit', color: 'hsl(var(--fg-primary))' }}>Ticket Monitoring Interactive Report</h2>
           <p style={{ fontSize: '0.85rem', color: 'hsl(var(--fg-secondary))' }}>
             Period span: {datePreset} {datePreset === 'Custom' ? `(${customStart} to ${customEnd})` : ''} • Generated on {new Date().toLocaleDateString()}
           </p>

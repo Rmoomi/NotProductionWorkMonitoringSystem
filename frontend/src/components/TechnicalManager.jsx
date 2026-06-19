@@ -193,7 +193,7 @@ export default function TechnicalManager({ staff, tickets, products, concerns, c
     : [];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '2rem', height: 'calc(100vh - 160px)' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '320px minmax(0, 1fr)', gap: '2rem', height: 'calc(100vh - 160px)' }}>
       
       {/* Left Sidebar List */}
       <div className="card-widget" style={{ padding: '1rem', height: '100%', overflowY: 'auto' }}>

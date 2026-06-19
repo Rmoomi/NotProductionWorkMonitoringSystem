@@ -88,6 +88,7 @@ export default function App() {
       setPassword('');
       setFirstname('');
       setLastname('');
+      setPosition('Technical');
       setCompanyName('');
       setContactNumber('');
       setAuthError('');
@@ -109,6 +110,55 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Dynamic Tab Title
+  useEffect(() => {
+    let title = 'Ticket Monitoring';
+    if (!session) {
+      title = 'Create Support Request | Ticket Monitoring';
+    } else if (userProfile) {
+      const type = userProfile.userType;
+      const role = userProfile.position;
+      const activeTabLabel = activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+      
+      if (type === 'client') {
+        if (activeTab === 'dashboard') {
+          title = 'Client Dashboard | Ticket Monitoring';
+        } else if (activeTab === 'tickets') {
+          title = 'Support Tickets | Ticket Monitoring';
+        } else {
+          title = `${activeTabLabel} | Ticket Monitoring`;
+        }
+      } else if (role === 'Admin') {
+        if (activeTab === 'dashboard') {
+          title = 'Admin Dashboard | Ticket Monitoring';
+        } else if (activeTab === 'tickets') {
+          title = 'Manage Tickets | Ticket Monitoring';
+        } else if (activeTab === 'technical') {
+          title = 'Technical Managers | Ticket Monitoring';
+        } else if (activeTab === 'clients') {
+          title = 'Manage Clients | Ticket Monitoring';
+        } else if (activeTab === 'reports') {
+          title = 'Analytics & Reports | Ticket Monitoring';
+        } else {
+          title = `${activeTabLabel} | Ticket Monitoring`;
+        }
+      } else { // Technician / Staff
+        if (activeTab === 'dashboard') {
+          title = 'Technician Dashboard | Ticket Monitoring';
+        } else if (activeTab === 'tickets') {
+          title = 'Tickets Queue | Ticket Monitoring';
+        } else if (activeTab === 'technical') {
+          title = 'Technical Directory | Ticket Monitoring';
+        } else if (activeTab === 'reports') {
+          title = 'Analytics | Ticket Monitoring';
+        } else {
+          title = `${activeTabLabel} | Ticket Monitoring`;
+        }
+      }
+    }
+    document.title = title;
+  }, [session, userProfile, activeTab]);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
@@ -518,8 +568,8 @@ export default function App() {
       }
     } else {
       // Client signup
-      if (!companyName.trim() || !firstname.trim() || !lastname.trim()) {
-        setAuthError('Please fill in all registration fields.');
+      if (!companyName.trim() || !firstname.trim() || !lastname.trim() || !contactNumber.trim()) {
+        setAuthError('Please fill in all registration fields (including Contact Number).');
         return;
       }
 
@@ -932,7 +982,7 @@ export default function App() {
                 />
               </div>
               <div className="form-group" onClick={() => setShowAuthModal(true)} style={{ cursor: 'pointer' }}>
-                <label>Contact Email <span style={{ color: 'red' }}>*</span></label>
+                <label>Contact Email (Optional)</label>
                 <input
                   type="email"
                   className="form-control"
@@ -944,7 +994,7 @@ export default function App() {
             </div>
 
             <div className="form-group" onClick={() => setShowAuthModal(true)} style={{ cursor: 'pointer' }}>
-              <label>Contact Number (Optional)</label>
+              <label>Contact Number <span style={{ color: 'red' }}>*</span></label>
               <input
                 type="text"
                 className="form-control"
@@ -1215,43 +1265,9 @@ export default function App() {
                         <option value="Technical">Technical</option>
                         <option value="Support">Support</option>
                         <option value="Sales">Sales</option>
-                        <option value="Admin">Admin</option>
                       </select>
                     </div>
                   </div>
-
-                  {position === 'Admin' && (
-                    <div className="form-group">
-                      <label style={{ color: '#8b5cf6' }}>Secret Admin Passcode</label>
-                      <div style={{ position: 'relative', width: '100%' }}>
-                        <input
-                          type={showAdminPw ? 'text' : 'password'}
-                          className="form-control"
-                          placeholder="Enter admin code"
-                          value={adminPasscode}
-                          onChange={(e) => setAdminPasscode(e.target.value)}
-                          style={{ paddingRight: '2.4rem' }}
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowAdminPw(p => !p)}
-                          style={{
-                            position: 'absolute', right: '0.7rem', top: '50%',
-                            transform: 'translateY(-50%)', background: 'none',
-                            border: 'none', cursor: 'pointer', lineHeight: 0,
-                            color: 'hsl(var(--fg-secondary))', padding: 0
-                          }}
-                          tabIndex={-1}
-                        >
-                          {showAdminPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                        </button>
-                      </div>
-                      <span style={{ fontSize: '0.7rem', color: 'hsl(var(--fg-secondary))' }}>
-                        Tip: Passcode is `Admin2026`
-                      </span>
-                    </div>
-                  )}
 
                   <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '0.6rem', marginTop: '0.1rem' }}>
                     Register Profile <ArrowRight size={15} />
@@ -1338,13 +1354,14 @@ export default function App() {
                   </div>
 
                   <div className="form-group">
-                    <label>Contact Number (Viber/Phone)</label>
+                    <label>Contact Number (Viber/Phone) <span style={{ color: 'red' }}>*</span></label>
                     <input
                       type="text"
                       className="form-control"
                       placeholder="+639171234567"
                       value={contactNumber}
                       onChange={(e) => setContactNumber(e.target.value)}
+                      required
                     />
                   </div>
 
@@ -1460,7 +1477,7 @@ export default function App() {
             <ShieldAlert size={48} style={{ color: '#ff7675', marginBottom: '1rem', alignSelf: 'center' }} />
             <h2 style={{ fontFamily: 'Outfit', marginBottom: '0.5rem' }}>Confirm Sign Out</h2>
             <p style={{ color: 'hsl(var(--fg-secondary))', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              Are you sure you want to log out of your TicketFlow account?
+              Are you sure you want to log out of your ticket monitoring account?
             </p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowLogoutConfirm(false)}>
