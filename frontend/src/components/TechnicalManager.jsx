@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ToggleLeft, ToggleRight, CheckSquare, Square, Mail, MapPin, UserCheck, Plus, Pencil, X } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 import supabase from '../supabaseClient';
 import { API_URL } from '../config';
 
@@ -9,9 +10,11 @@ export default function TechnicalManager({ staff, tickets, products, concerns, c
   
   // Forms state
   const [techForm, setTechForm] = useState({
+    username: '',
     firstname: '',
     lastname: '',
     email: '',
+    password: '',
     contact_viber: '',
     branch: 'DAVAO',
     position: 'Technical'
@@ -82,12 +85,79 @@ export default function TechnicalManager({ staff, tickets, products, concerns, c
     e.preventDefault();
     try {
       if (activeModal === 'add_edit' && !selectedTech?.technical_id) {
-        // Add new (Create profile without auth user, or wait for signup hook. 
-        // Admin creates it manually first, then user can signup later with matching email)
-        const { error } = await supabase
+        // Check username uniqueness
+        const cleanUsername = techForm.username.trim().toLowerCase();
+        
+        const { data: existingClient } = await supabase
+          .from('clients')
+          .select('username')
+          .eq('username', cleanUsername)
+          .maybeSingle();
+        if (existingClient) {
+          alert('Username is already taken by a client.');
+          return;
+        }
+
+        const { data: existingStaff } = await supabase
           .from('technical_staff')
-          .insert([techForm]);
-        if (error) throw error;
+          .select('username')
+          .eq('username', cleanUsername)
+          .maybeSingle();
+        if (existingStaff) {
+          alert('Username is already taken by a staff member.');
+          return;
+        }
+
+        if (!techForm.password || techForm.password.length < 6) {
+          alert('Password must be at least 6 characters long.');
+          return;
+        }
+
+        const staffEmail = techForm.email.trim() || (cleanUsername + '@ticketmonitoring.local');
+
+        // Create temporary Supabase client so we don't disrupt current Admin session storage
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const tempSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+          }
+        });
+
+        // 1. Sign up the user in Supabase Auth
+        const { data: authData, error: signupErr } = await tempSupabase.auth.signUp({
+          email: staffEmail,
+          password: techForm.password,
+          options: {
+            data: {
+              firstname: techForm.firstname.trim(),
+              lastname: techForm.lastname.trim(),
+              position: techForm.position,
+              branch: techForm.branch,
+              role: 'Technical',
+              username: cleanUsername,
+              contact_email: techForm.email.trim() || null
+            }
+          }
+        });
+
+        if (signupErr) throw signupErr;
+
+        // 2. Since auth.signUp triggers handle_new_auth_user(), the row is already in the database.
+        // We now update it with contact_viber and set is_active to true (since Admin created them)
+        if (authData?.user) {
+          const { error: updateErr } = await supabase
+            .from('technical_staff')
+            .update({
+              contact_viber: techForm.contact_viber.trim() || null,
+              is_active: true
+            })
+            .eq('user_id', authData.user.id);
+            
+          if (updateErr) throw updateErr;
+        }
       } else {
         // Edit existing
         const response = await fetch(`${API_URL}/api/technical/${selectedTech.technical_id}/privileges`, {
@@ -146,9 +216,11 @@ export default function TechnicalManager({ staff, tickets, products, concerns, c
   const openAddEditModal = (mode) => {
     if (mode === 'edit' && selectedTech) {
       setTechForm({
+        username: selectedTech.username || '',
         firstname: selectedTech.firstname,
         lastname: selectedTech.lastname,
         email: selectedTech.email,
+        password: '',
         contact_viber: selectedTech.contact_viber || '',
         branch: selectedTech.branch || 'DAVAO',
         position: selectedTech.position || 'Technical'
@@ -156,9 +228,11 @@ export default function TechnicalManager({ staff, tickets, products, concerns, c
       setActiveModal('add_edit');
     } else {
       setTechForm({
+        username: '',
         firstname: '',
         lastname: '',
         email: '',
+        password: '',
         contact_viber: '',
         branch: 'DAVAO',
         position: 'Technical'
@@ -270,7 +344,9 @@ export default function TechnicalManager({ staff, tickets, products, concerns, c
               <div>
                 <h2 style={{ fontFamily: 'Outfit' }}>{selectedTech.firstname} {selectedTech.lastname}</h2>
                 <div style={{ display: 'flex', gap: '0.75rem', color: 'hsl(var(--fg-secondary))', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Mail size={14} /> {selectedTech.email}</span>
+                  {selectedTech.email && !selectedTech.email.endsWith('@ticketmonitoring.local') && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Mail size={14} /> {selectedTech.email}</span>
+                  )}
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={14} /> {selectedTech.branch} ({selectedTech.position})</span>
                 </div>
               </div>
@@ -477,16 +553,40 @@ export default function TechnicalManager({ staff, tickets, products, concerns, c
               </div>
 
               {!selectedTech && (
-                <div className="form-group">
-                  <label>Email Address</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    value={techForm.email}
-                    onChange={(e) => setTechForm({ ...techForm, email: e.target.value })}
-                    required
-                  />
-                </div>
+                <>
+                  <div className="form-group">
+                    <label>Username</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={techForm.username}
+                      onChange={(e) => setTechForm({ ...techForm, username: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group">
+                      <label>Email Address (Optional)</label>
+                      <input
+                        type="email"
+                        className="form-control"
+                        value={techForm.email}
+                        onChange={(e) => setTechForm({ ...techForm, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Password</label>
+                      <input
+                        type="password"
+                        placeholder="Min 6 characters"
+                        className="form-control"
+                        value={techForm.password}
+                        onChange={(e) => setTechForm({ ...techForm, password: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               <div className="form-group">

@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS public.clients (
     contact_person VARCHAR NOT NULL,
     contact_number VARCHAR,
     email VARCHAR,
+    username VARCHAR UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS public.technical_staff (
     firstname VARCHAR NOT NULL,
     lastname VARCHAR NOT NULL,
     email VARCHAR UNIQUE NOT NULL,
+    username VARCHAR UNIQUE,
     contact_viber VARCHAR,
     branch VARCHAR,
     position VARCHAR CHECK (position IN ('Technical', 'Sales', 'Support', 'Admin')) DEFAULT 'Technical',
@@ -259,13 +261,43 @@ DECLARE
     v_position VARCHAR;
     v_branch VARCHAR;
     v_is_active BOOLEAN;
+    v_role VARCHAR;
+    v_company_name VARCHAR;
+    v_username VARCHAR;
+    v_contact_email VARCHAR;
 BEGIN
+    v_role := COALESCE(NEW.raw_user_meta_data->>'role', 'Technical');
+    v_username := COALESCE(NEW.raw_user_meta_data->>'username', SPLIT_PART(NEW.email, '@', 1));
+    v_contact_email := NEW.raw_user_meta_data->>'contact_email';
+    
+    IF v_role = 'Client' THEN
+        v_company_name := COALESCE(NEW.raw_user_meta_data->>'company_name', 'Company ' || NEW.id);
+        
+        INSERT INTO public.clients (user_id, company_name, contact_person, contact_number, email, username)
+        VALUES (
+            NEW.id,
+            v_company_name,
+            COALESCE(NEW.raw_user_meta_data->>'firstname', '') || ' ' || COALESCE(NEW.raw_user_meta_data->>'lastname', ''),
+            NEW.raw_user_meta_data->>'contact_number',
+            v_contact_email,
+            v_username
+        )
+        ON CONFLICT (company_name) DO UPDATE 
+        SET user_id = EXCLUDED.user_id, 
+            email = EXCLUDED.email,
+            contact_person = EXCLUDED.contact_person,
+            contact_number = EXCLUDED.contact_number,
+            username = COALESCE(public.clients.username, EXCLUDED.username);
+            
+        RETURN NEW;
+    END IF;
+
+    -- Otherwise, register as technical staff
     v_firstname := COALESCE(NEW.raw_user_meta_data->>'firstname', 'New');
     v_lastname := COALESCE(NEW.raw_user_meta_data->>'lastname', 'Staff');
     v_position := COALESCE(NEW.raw_user_meta_data->>'position', 'Technical');
     v_branch := COALESCE(NEW.raw_user_meta_data->>'branch', 'DAVAO');
     
-    -- If registering with passcode 'Admin2026', automatically activate and make Admin
     IF NEW.raw_user_meta_data->>'admin_passcode' = 'Admin2026' THEN
         v_is_active := true;
         v_position := 'Admin';
@@ -275,12 +307,18 @@ BEGIN
 
     INSERT INTO public.technical_staff (
         user_id, firstname, lastname, email, branch, position, is_active,
-        can_view_tickets, can_view_technical, can_view_reports
+        can_view_tickets, can_view_technical, can_view_reports, username
     )
     VALUES (
-        NEW.id, v_firstname, v_lastname, NEW.email, v_branch, v_position, v_is_active,
-        true, true, true
-    );
+        NEW.id, v_firstname, v_lastname, COALESCE(v_contact_email, NEW.email), v_branch, v_position, v_is_active,
+        true, true, true, v_username
+    )
+    ON CONFLICT (email) DO UPDATE
+    SET user_id = EXCLUDED.user_id,
+        firstname = EXCLUDED.firstname,
+        lastname = EXCLUDED.lastname,
+        username = COALESCE(public.technical_staff.username, EXCLUDED.username);
+        
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

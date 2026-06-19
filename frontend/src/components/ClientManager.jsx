@@ -168,7 +168,7 @@ export default function ClientManager({ clients, tickets, staff, onRefresh }) {
                   <h2 style={{ fontFamily: 'Outfit' }}>{selectedClient.company_name}</h2>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', color: 'hsl(var(--fg-secondary))', fontSize: '0.85rem', marginTop: '0.25rem' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><User size={14} /> {selectedClient.contact_person}</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Mail size={14} /> {selectedClient.email || 'No email provided'}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Mail size={14} /> {selectedClient.email && !selectedClient.email.endsWith('@ticketmonitoring.local') ? selectedClient.email : 'No email provided'}</span>
                     {selectedClient.contact_number && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Phone size={14} /> {selectedClient.contact_number}</span>
                     )}
@@ -194,7 +194,7 @@ export default function ClientManager({ clients, tickets, staff, onRefresh }) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'hsl(var(--fg-secondary))' }}>Email:</span>
-                    <span style={{ fontWeight: 600 }}>{selectedClient.email || 'N/A'}</span>
+                    <span style={{ fontWeight: 600 }}>{selectedClient.email && !selectedClient.email.endsWith('@ticketmonitoring.local') ? selectedClient.email : 'N/A'}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'hsl(var(--fg-secondary))' }}>Phone:</span>

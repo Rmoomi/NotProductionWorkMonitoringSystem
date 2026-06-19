@@ -39,12 +39,13 @@ export default function App() {
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
 
   // Auth Form Fields
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername]   = useState('');
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
   const [firstname, setFirstname] = useState('');
-  const [lastname, setLastname] = useState('');
-  const [position, setPosition] = useState('Technical');
-  const [branch, setBranch] = useState('DAVAO');
+  const [lastname, setLastname]   = useState('');
+  const [position, setPosition]   = useState('Technical');
+  const [branch, setBranch]       = useState('DAVAO');
   const [adminPasscode, setAdminPasscode] = useState('');
 
   // Client Sign Up Form Fields
@@ -84,6 +85,7 @@ export default function App() {
         window.location.pathname.endsWith('/technical')
       );
       // Reset forms & state when URL route changes
+      setUsername('');
       setEmail('');
       setPassword('');
       setFirstname('');
@@ -490,6 +492,29 @@ export default function App() {
   // -----------------------------------------------------------------
   // Auth Operations (Login / Signup)
   // -----------------------------------------------------------------
+  const checkUsernameUnique = async (usrName) => {
+    const clean = usrName.trim().toLowerCase();
+    if (!clean) return false;
+    
+    const { data: clientData } = await supabase
+      .from('clients')
+      .select('username')
+      .eq('username', clean)
+      .maybeSingle();
+
+    if (clientData) return false;
+
+    const { data: staffData } = await supabase
+      .from('technical_staff')
+      .select('username')
+      .eq('username', clean)
+      .maybeSingle();
+
+    if (staffData) return false;
+
+    return true;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setAuthError('');
@@ -497,7 +522,8 @@ export default function App() {
 
     try {
       isExplicitLoginRef.current = true;
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const virtualEmail = username.trim().toLowerCase() + '@ticketmonitoring.local';
+      const { error } = await supabase.auth.signInWithPassword({ email: virtualEmail, password });
       if (error) {
         isExplicitLoginRef.current = false;
         throw error;
@@ -521,9 +547,21 @@ export default function App() {
         return;
       }
 
+      if (!username.trim() || !firstname.trim() || !lastname.trim()) {
+        setAuthError('Please fill in all registration fields (including Username).');
+        return;
+      }
+
+      const isUnique = await checkUsernameUnique(username);
+      if (!isUnique) {
+        setAuthError('Username is already taken. Please choose another one.');
+        return;
+      }
+
+      const virtualEmail = username.trim().toLowerCase() + '@ticketmonitoring.local';
       try {
         const { data: { user }, error } = await supabase.auth.signUp({
-          email,
+          email: virtualEmail,
           password,
           options: {
             data: {
@@ -532,6 +570,8 @@ export default function App() {
               position,
               branch,
               role: 'Technical',
+              username: username.trim().toLowerCase(),
+              contact_email: email.trim() || null,
               admin_passcode: position === 'Admin' ? adminPasscode : null
             }
           }
@@ -548,7 +588,7 @@ export default function App() {
           if (position === 'Admin') {
             isExplicitLoginRef.current = true;
             try {
-              const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+              const { error: signInErr } = await supabase.auth.signInWithPassword({ email: virtualEmail, password });
               if (signInErr) {
                 isExplicitLoginRef.current = false;
                 throw signInErr;
@@ -568,14 +608,21 @@ export default function App() {
       }
     } else {
       // Client signup
-      if (!companyName.trim() || !firstname.trim() || !lastname.trim() || !contactNumber.trim()) {
-        setAuthError('Please fill in all registration fields (including Contact Number).');
+      if (!username.trim() || !companyName.trim() || !firstname.trim() || !lastname.trim() || !contactNumber.trim()) {
+        setAuthError('Please fill in all registration fields (including Username and Contact Number).');
         return;
       }
 
+      const isUnique = await checkUsernameUnique(username);
+      if (!isUnique) {
+        setAuthError('Username is already taken. Please choose another one.');
+        return;
+      }
+
+      const virtualEmail = username.trim().toLowerCase() + '@ticketmonitoring.local';
       try {
         const { data: { user }, error } = await supabase.auth.signUp({
-          email,
+          email: virtualEmail,
           password,
           options: {
             data: {
@@ -583,7 +630,9 @@ export default function App() {
               lastname,
               company_name: companyName.trim(),
               contact_number: contactNumber.trim(),
-              role: 'Client'
+              role: 'Client',
+              username: username.trim().toLowerCase(),
+              contact_email: email.trim() || null
             }
           }
         });
@@ -602,6 +651,8 @@ export default function App() {
               .eq('company_name', companyName.trim())
               .maybeSingle();
 
+            const dbEmail = email.trim() || null;
+
             if (!existingClient) {
               await supabase
                 .from('clients')
@@ -610,12 +661,17 @@ export default function App() {
                   company_name: companyName.trim(),
                   contact_person: `${firstname.trim()} ${lastname.trim()}`,
                   contact_number: contactNumber.trim(),
-                  email: email
+                  email: dbEmail,
+                  username: username.trim().toLowerCase()
                 }]);
-            } else if (!existingClient.user_id) {
+            } else {
               await supabase
                 .from('clients')
-                .update({ user_id: user.id })
+                .update({ 
+                  user_id: user.id,
+                  email: dbEmail,
+                  username: username.trim().toLowerCase()
+                })
                 .eq('client_id', existingClient.client_id);
             }
           } catch (dbErr) {
@@ -636,6 +692,7 @@ export default function App() {
     setAuthMode('login');
     setAuthSuccess('');
     setAuthError('');
+    setUsername('');
     setEmail('');
     setPassword('');
     setFirstname('');
@@ -744,9 +801,11 @@ export default function App() {
                   ? userProfile?.contact_person
                   : `${userProfile?.firstname} ${userProfile?.lastname}`}
               </h2>
-              <p style={{ color: 'hsl(var(--fg-secondary))', fontSize: '0.85rem' }}>
-                {session?.user?.email}
-              </p>
+              {session?.user?.email && !session.user.email.endsWith('@ticketmonitoring.local') && (
+                <p style={{ color: 'hsl(var(--fg-secondary))', fontSize: '0.85rem' }}>
+                  {session.user.email}
+                </p>
+              )}
             </div>
 
             <div style={{
@@ -1069,7 +1128,7 @@ export default function App() {
         {/* Modal Auth Popup */}
         {showAuthModal && (
           <div className="modal-overlay" style={{ zIndex: 2000 }} onClick={() => setShowAuthModal(false)}>
-            <div className="auth-card" onClick={(e) => e.stopPropagation()} style={{ position: 'relative', width: '100%', maxWidth: '460px', margin: '1rem' }}>
+            <div className="auth-card" onClick={(e) => e.stopPropagation()} style={{ position: 'relative', width: '100%', maxWidth: '460px', margin: '1rem', maxHeight: '90vh', overflowY: 'auto' }}>
               
               {/* Close Button */}
               <button 
@@ -1140,13 +1199,13 @@ export default function App() {
               {authMode === 'login' ? (
                 <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.75rem' }}>
                   <div className="form-group">
-                    <label>Email Address</label>
+                    <label>Username</label>
                     <input
-                      type="email"
+                      type="text"
                       className="form-control"
-                      placeholder="name@company.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       required
                     />
                   </div>
@@ -1184,6 +1243,18 @@ export default function App() {
               ) : isTechnicalUrl ? (
                 /* Technical Staff Signup */
                 <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.75rem' }}>
+                  <div className="form-group">
+                    <label>Username <span style={{ color: 'red' }}>*</span></label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="john_doe"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                     <div className="form-group">
                       <label>First Name</label>
@@ -1210,14 +1281,13 @@ export default function App() {
                   </div>
 
                   <div className="form-group">
-                    <label>Email Address</label>
+                    <label>Email Address (Optional)</label>
                     <input
                       type="email"
                       className="form-control"
                       placeholder="john.doe@company.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      required
                     />
                   </div>
 
@@ -1277,6 +1347,18 @@ export default function App() {
                 /* Client Signup */
                 <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.75rem' }}>
                   <div className="form-group">
+                    <label>Username <span style={{ color: 'red' }}>*</span></label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="john_doe"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
                     <label>Company Name</label>
                     <input
                       type="text"
@@ -1314,14 +1396,13 @@ export default function App() {
                   </div>
 
                   <div className="form-group">
-                    <label>Email Address</label>
+                    <label>Email Address (Optional)</label>
                     <input
                       type="email"
                       className="form-control"
                       placeholder="contact@company.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      required
                     />
                   </div>
 

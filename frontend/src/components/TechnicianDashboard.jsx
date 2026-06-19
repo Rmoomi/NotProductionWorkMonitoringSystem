@@ -51,6 +51,7 @@ export default function TechnicianDashboard({ userProfile, tickets, clients, pro
   
   // Create New Client inside Self-Ticket if not found
   const [newClientForm, setNewClientForm] = useState({
+    username: '',
     company_name: '',
     contact_person: '',
     contact_number: '',
@@ -340,8 +341,30 @@ export default function TechnicianDashboard({ userProfile, tickets, clients, pro
   const handleSelfTicketSubmit = async (e) => {
     e.preventDefault();
     if (showNewClientForm) {
-      if (!newClientForm.company_name.trim() || !newClientForm.contact_person.trim()) {
-        alert('Please fill in all required client fields.');
+      if (!newClientForm.username.trim() || !newClientForm.company_name.trim() || !newClientForm.contact_person.trim()) {
+        alert('Please fill in all required client fields (including Username).');
+        return;
+      }
+
+      const cleanUsername = newClientForm.username.trim().toLowerCase();
+      // Uniqueness check
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('username')
+        .eq('username', cleanUsername)
+        .maybeSingle();
+      if (existingClient) {
+        alert('Username is already taken by a client.');
+        return;
+      }
+
+      const { data: existingStaff } = await supabase
+        .from('technical_staff')
+        .select('username')
+        .eq('username', cleanUsername)
+        .maybeSingle();
+      if (existingStaff) {
+        alert('Username is already taken by a staff member.');
         return;
       }
     } else {
@@ -360,10 +383,19 @@ export default function TechnicianDashboard({ userProfile, tickets, clients, pro
       let finalClientId;
 
       if (showNewClientForm) {
+        const cleanUsername = newClientForm.username.trim().toLowerCase();
+        const clientEmail = newClientForm.email.trim() || null;
+        
         // Create new client first
         const { data: newClient, error } = await supabase
           .from('clients')
-          .insert([newClientForm])
+          .insert([{
+            username: cleanUsername,
+            company_name: newClientForm.company_name.trim(),
+            contact_person: newClientForm.contact_person.trim(),
+            contact_number: newClientForm.contact_number.trim() || null,
+            email: clientEmail
+          }])
           .select('client_id')
           .single();
         if (error) throw error;
@@ -406,7 +438,7 @@ export default function TechnicianDashboard({ userProfile, tickets, clients, pro
         concern_description: '',
         priority: 'Medium'
       });
-      setNewClientForm({ company_name: '', contact_person: '', contact_number: '', email: '' });
+      setNewClientForm({ username: '', company_name: '', contact_person: '', contact_number: '', email: '' });
       setShowNewClientForm(false);
     } catch (err) {
       alert(`Failed to create self ticket: ${err.message}`);
@@ -802,6 +834,17 @@ export default function TechnicianDashboard({ userProfile, tickets, clients, pro
                   </button>
                 </div>
                 <div className="form-group">
+                  <label>Username {renderAsterisk(newClientForm.username)}</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="john_doe"
+                    value={newClientForm.username}
+                    onChange={(e) => setNewClientForm({ ...newClientForm, username: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
                   <label>Company Name {renderAsterisk(newClientForm.company_name)}</label>
                   <input
                     type="text"
@@ -832,7 +875,7 @@ export default function TechnicianDashboard({ userProfile, tickets, clients, pro
                     />
                   </div>
                   <div className="form-group">
-                    <label>Email</label>
+                    <label>Email (Optional)</label>
                     <input
                       type="email"
                       className="form-control"
