@@ -1507,6 +1507,130 @@ export default function App() {
     : 0;
 
   // 3. Main Dashboard Layout (For active users)
+  if (isClient) {
+    return (
+      <div className="client-app-container">
+        {/* Dynamic Keyframes for sliding toast */}
+        <style>{`
+          @keyframes slideInRight {
+            from {
+              transform: translateX(120%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+        `}</style>
+
+        {/* Success Login Toast */}
+        {loginToast && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 10000,
+            backgroundColor: 'rgba(0, 184, 148, 0.95)',
+            color: '#fff',
+            padding: '1rem 1.5rem',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: '0 10px 25px rgba(0, 184, 148, 0.25)',
+            backdropFilter: 'blur(8px)',
+            fontFamily: 'Outfit',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            animation: 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            <CheckCircle size={18} />
+            <span>{loginToast}</span>
+          </div>
+        )}
+
+        {/* Logout Confirmation Modal */}
+        {showLogoutConfirm && (
+          <div className="modal-overlay" style={{ zIndex: 1000 }} onClick={() => setShowLogoutConfirm(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center', padding: '2rem' }}>
+              <ShieldAlert size={48} style={{ color: '#ff7675', marginBottom: '1rem', alignSelf: 'center' }} />
+              <h2 style={{ fontFamily: 'Outfit', marginBottom: '0.5rem' }}>Confirm Sign Out</h2>
+              <p style={{ color: 'hsl(var(--fg-secondary))', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                Are you sure you want to log out of your ticket monitoring account?
+              </p>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowLogoutConfirm(false)}>
+                  Cancel
+                </button>
+                <button className="btn btn-danger" style={{ flex: 1 }} onClick={() => { setShowLogoutConfirm(false); handleLogout(); }}>
+                  Yes, Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Top Navbar */}
+        <header className="client-navbar">
+          <div className="client-navbar-container">
+            <div className="client-navbar-brand" onClick={() => setActiveTab('dashboard')} style={{ cursor: 'pointer' }}>
+              <img src={logoMssc} alt="MSSC Logo" className="client-navbar-logo" />
+              <span style={{ fontFamily: 'Outfit', fontWeight: 800, fontSize: '1.25rem', color: 'hsl(var(--fg-primary))' }}>
+                Ticket Monitoring
+              </span>
+            </div>
+
+            <nav className="client-navbar-nav">
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`client-nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+              >
+                <LayoutDashboard size={16} />
+                <span>Submit Request</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('tickets')}
+                className={`client-nav-btn ${activeTab === 'tickets' ? 'active' : ''}`}
+              >
+                <ClipboardList size={16} />
+                <span>My Tickets</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`client-nav-btn ${activeTab === 'profile' ? 'active' : ''}`}
+              >
+                <Settings size={16} />
+                <span>Profile Settings</span>
+              </button>
+            </nav>
+
+            <div className="client-navbar-actions">
+              <NotificationCenter
+                userProfile={userProfile}
+                tickets={tickets}
+                onRefresh={handleRefresh}
+              />
+
+              <button className="theme-btn" onClick={toggleTheme} style={{ border: '1px solid hsl(var(--border-color))', borderRadius: 'var(--radius-md)', padding: '0.4rem 0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'transparent', color: 'hsl(var(--fg-primary))' }}>
+                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+              </button>
+
+              <button className="btn btn-secondary" onClick={triggerLogoutConfirm} style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem', height: '36px' }}>
+                <LogOut size={14} /> <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main className="client-main-content">
+          {renderActiveTab()}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
 

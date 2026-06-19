@@ -142,46 +142,220 @@ export default function ClientDashboard({ userProfile, tickets, products, concer
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
       {view === 'dashboard' ? (
-        <>
-          {/* Welcome Banner Card */}
-          <div className="card-widget" style={{ 
-            background: 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.02) 100%)',
-            border: '1px solid rgba(var(--primary-rgb), 0.2)',
-            padding: '1.5rem 2rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1.5rem'
-          }}>
-            <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-              <div className="avatar" style={{ 
-                width: '56px', height: '56px', fontSize: '1.4rem', 
-                backgroundColor: 'hsl(var(--primary))', color: '#fff', border: 'none' 
-              }}>
-                {userProfile?.company_name?.[0]?.toUpperCase() || 'C'}
-              </div>
+        <div className="google-form-container">
+          
+          {/* Header Card with Gradient Theme Banner */}
+          <div className="google-form-card google-form-header-card">
+            <div className="google-form-header-bar"></div>
+            <h1 style={{ fontFamily: 'Outfit', fontSize: '1.85rem', fontWeight: '700', color: 'hsl(var(--fg-primary))', marginTop: '0.5rem' }}>
+              Support Request Form
+            </h1>
+            <p style={{ fontSize: '0.88rem', color: 'hsl(var(--fg-secondary))', lineHeight: '1.5' }}>
+              Submit a new technical concern or request support for your products. We will assign a technician to handle your issue shortly.
+            </p>
+            <div style={{ 
+              borderTop: '1px solid hsl(var(--border-color))', 
+              paddingTop: '0.85rem', 
+              marginTop: '0.5rem',
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              fontSize: '0.8rem', 
+              color: 'hsl(var(--fg-secondary))',
+              flexWrap: 'wrap',
+              gap: '0.5rem'
+            }}>
               <div>
-                <h2 style={{ fontFamily: 'Outfit', fontSize: '1.5rem', marginBottom: '0.25rem' }}>
-                  Welcome, {userProfile?.contact_person || 'Client'}
-                </h2>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.85rem', color: 'hsl(var(--fg-secondary))' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Building size={14} /> {userProfile?.company_name}</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Mail size={14} /> {userProfile?.email}</span>
-                  {userProfile?.contact_number && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Phone size={14} /> {userProfile.contact_number}</span>
-                  )}
-                </div>
+                Logged in as <strong>{userProfile?.username || userProfile?.contact_person}</strong> 
+                {userProfile?.email && !userProfile.email.endsWith('@ticketmonitoring.local') && ` (${userProfile.email})`}
               </div>
+              <div style={{ color: 'red', fontWeight: '500' }}>* Required</div>
             </div>
-            
-            <button className="btn btn-primary" onClick={() => setActiveModal(true)} style={{ gap: '0.5rem', padding: '0.75rem 1.25rem' }}>
-              <Plus size={18} /> Request Support
-            </button>
           </div>
 
-          {/* Metrics Cards Grid */}
-          <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          {formError && (
+            <div style={{ color: '#ff7675', padding: '1rem 1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid #ff7675', backgroundColor: 'rgba(255, 118, 117, 0.05)', fontSize: '0.85rem' }}>
+              {formError}
+            </div>
+          )}
+
+          {formSuccess && (
+            <div style={{ color: '#00b894', padding: '1rem 1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid #00b894', backgroundColor: 'rgba(0, 184, 148, 0.05)', fontSize: '0.85rem' }}>
+              {formSuccess}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmitTicket} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            
+            {/* Section 1: Product Selection */}
+            <div className="google-form-card google-form-section">
+              <label>
+                Affected Product / System {renderAsterisk(isAddingProduct ? newProductName : form.product_id)}
+              </label>
+              <div className="google-form-desc">
+                Select the product or software system that is experiencing issues.
+              </div>
+              
+              {isAddingProduct ? (
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <input
+                    type="text"
+                    placeholder="New product name (e.g. Biotime)"
+                    className="form-control"
+                    value={newProductName}
+                    onChange={(e) => setNewProductName(e.target.value)}
+                    required
+                    style={{ height: '42px' }}
+                  />
+                  <button 
+                    type="button" 
+                    className="btn btn-primary"
+                    onClick={handleAddNewProduct}
+                    style={{ padding: '0.375rem 1rem', fontSize: '0.85rem' }}
+                  >
+                    Save
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary"
+                    onClick={() => { setIsAddingProduct(false); setNewProductName(''); }}
+                    style={{ padding: '0.375rem 1rem', fontSize: '0.85rem' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <select
+                  className="form-control"
+                  value={form.product_id}
+                  onChange={(e) => {
+                    if (e.target.value === 'ADD_NEW') {
+                      setIsAddingProduct(true);
+                    } else {
+                      setForm({ ...form, product_id: e.target.value });
+                    }
+                  }}
+                  required
+                  style={{ height: '42px', marginTop: '0.5rem' }}
+                >
+                  {products.map(p => (
+                    <option key={p.product_id} value={p.product_id}>
+                      {p.product_name} {p.version ? `(${p.version})` : ''}
+                    </option>
+                  ))}
+                  <option value="ADD_NEW">+ Add New Product...</option>
+                </select>
+              )}
+            </div>
+
+            {/* Section 2: Concern Category */}
+            <div className="google-form-card google-form-section">
+              <label>
+                Concern Category {renderAsterisk(form.concern_id)}
+              </label>
+              <div className="google-form-desc">
+                Select the category that best describes your technical issue.
+              </div>
+              <select
+                className="form-control"
+                value={form.concern_id}
+                onChange={(e) => setForm({ ...form, concern_id: e.target.value })}
+                required
+                style={{ height: '42px', marginTop: '0.5rem' }}
+              >
+                {concerns.map(c => (
+                  <option key={c.concern_id} value={c.concern_id}>
+                    {c.concern_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Section 3: Issue Description */}
+            <div className="google-form-card google-form-section">
+              <label>
+                Issue Description {isOthersSelected && renderAsterisk(form.concern_description)}
+              </label>
+              <div className="google-form-desc">
+                Provide details about the issue you are experiencing (e.g. error messages, unexpected behavior).
+              </div>
+              <textarea
+                className="form-control"
+                rows="5"
+                value={form.concern_description}
+                onChange={(e) => setForm({ ...form, concern_description: e.target.value })}
+                placeholder={isOthersSelected ? "Please describe your specific concern (required)..." : "Provide details about the issue you are experiencing (optional)..."}
+                required={isOthersSelected}
+                style={{ resize: 'none', marginTop: '0.5rem', padding: '0.75rem' }}
+              />
+            </div>
+
+            {/* Section 4: Priority Request */}
+            <div className="google-form-card google-form-section">
+              <label>
+                Priority Request {renderAsterisk(form.priority)}
+              </label>
+              <div className="google-form-desc">
+                How urgent is this concern? High priority is reserved for system-down or critical business-stopping issues.
+              </div>
+              
+              <div className="google-form-radio-group">
+                {[
+                  { value: 'Low', label: 'Low (General query / non-urgent request)' },
+                  { value: 'Medium', label: 'Medium (Standard operational issue / minor interruption)' },
+                  { value: 'High', label: 'High (Critical failure / system down / blocked operations)' }
+                ].map(opt => (
+                  <div 
+                    key={opt.value}
+                    onClick={() => setForm({ ...form, priority: opt.value })}
+                    className={`google-form-radio-option ${form.priority === opt.value ? 'selected' : ''}`}
+                  >
+                    <input 
+                      type="radio" 
+                      name="priority"
+                      value={opt.value}
+                      checked={form.priority === opt.value}
+                      onChange={() => {}} 
+                    />
+                    <span>{opt.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit and Clear Actions */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                disabled={isSubmitting} 
+                style={{ padding: '0.75rem 2rem', fontSize: '0.95rem', fontWeight: 600, justifyContent: 'center' }}
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit Support Ticket'}
+              </button>
+              
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => setForm(prev => ({
+                  ...prev,
+                  concern_description: '',
+                  priority: 'Medium'
+                }))}
+                style={{ padding: '0.75rem 1.5rem', fontSize: '0.9rem' }}
+              >
+                Clear Form
+              </button>
+            </div>
+
+          </form>
+        </div>
+      ) : (
+        /* Filter and List Widget */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          
+          {/* Ticket stats grid */}
+          <div className="metrics-grid">
             <div className="metric-card">
               <div className="metric-info">
                 <h3>Total Requests</h3>
@@ -222,10 +396,8 @@ export default function ClientDashboard({ userProfile, tickets, products, concer
               </div>
             </div>
           </div>
-        </>
-      ) : (
-        /* Filter and List Widget */
-        <div className="card-widget">
+
+          <div className="card-widget">
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid hsl(var(--border-color))', paddingBottom: '1rem', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -335,6 +507,7 @@ export default function ClientDashboard({ userProfile, tickets, products, concer
           </div>
 
         </div>
+      </div>
       )}
 
       {/* ----------------------------------------------------------------- */}
